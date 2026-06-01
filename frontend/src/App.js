@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Lee la URL del servidor desde variable de entorno
 // En desarrollo: http://localhost:3001
@@ -328,66 +328,117 @@ function ShopifyConnect({ onBack, onDone }) {
 
 /* ─── DASHBOARD ──────────────────────────────────────────────────────────── */
 function Dashboard({ onConnectMore }) {
-  const [rules, setRules] = useState([
-    { id: 1, icon: "📦", label: "Pedido entregado", channel: "Email", platform: "Google", active: true, sent: 0, rate: 0 },
-  ]);
+  const [stores, setStores] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const toggle = (id) => setRules(r => r.map(x => x.id === id ? { ...x, active: !x.active } : x));
+  // Fetch stores from Railway API on mount
+  useEffect(() => {
+    fetch("https://reviewpilot-production-3183.up.railway.app/api/stores")
+      .then(r => r.json())
+      .then(data => {
+        setStores(data.stores || []);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError("No se pudo conectar con el servidor.");
+        setLoading(false);
+      });
+  }, []);
+
+  const fmt = (iso) => {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleDateString("es-MX", {
+      day: "2-digit", month: "short", year: "numeric",
+    });
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "#fafafa", fontFamily: BODY }}>
       <div style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 40px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 20, fontFamily: FONT }}>ReviewPilot</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e" }} />
-          <span style={{ fontSize: 13, color: "#555" }}>mi-tienda.myshopify.com</span>
-        </div>
+        <Btn onClick={onConnectMore} size="sm">+ Conectar tienda</Btn>
       </div>
 
       <div style={{ maxWidth: 760, margin: "48px auto", padding: "0 24px" }}>
         <h1 style={{ fontSize: 30, fontFamily: FONT, fontWeight: 400, marginBottom: 6 }}>Dashboard</h1>
-        <p style={{ fontSize: 14, color: "#888", marginBottom: 32 }}>Tu tienda está activa y escuchando eventos</p>
+        <p style={{ fontSize: 14, color: "#888", marginBottom: 32 }}>Tiendas conectadas y estado de automatizaciones</p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14, marginBottom: 32 }}>
-          {[["0","Solicitudes enviadas"],["0%","Tasa de conversión"],["0","Reseñas obtenidas"]].map(([v,l]) => (
-            <div key={l} style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 14, padding: "22px 18px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-              <div style={{ fontSize: 28, fontWeight: 700, color: "#0a0a0a", fontFamily: FONT }}>{v}</div>
-              <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>{l}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, overflow: "hidden", marginBottom: 16 }}>
-          <div style={{ padding: "18px 22px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a" }}>Automatizaciones activas</span>
-            <Btn onClick={onConnectMore} size="sm">+ Conectar plataforma</Btn>
+        {/* Loading */}
+        {loading && (
+          <div style={{ textAlign: "center", padding: "60px 0" }}>
+            <div style={{ width: 32, height: 32, border: "3px solid #e5e7eb", borderTopColor: "#0a0a0a", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
+            <p style={{ fontSize: 14, color: "#aaa" }}>Cargando tiendas desde Supabase…</p>
           </div>
-          {rules.map(r => (
-            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 22px", borderBottom: "1px solid #f9f9f9" }}>
-              <div
-                onClick={() => toggle(r.id)}
-                style={{
-                  width: 42, height: 22, borderRadius: 99,
-                  background: r.active ? "#0a0a0a" : "#e5e7eb",
-                  position: "relative", cursor: "pointer", flexShrink: 0,
-                  transition: "background 0.2s",
-                }}>
-                <div style={{ position: "absolute", top: 3, left: r.active ? 21 : 3, width: 16, height: 16, borderRadius: "50%", background: "#fff", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#0a0a0a" }}>{r.icon} {r.label}</div>
-                <div style={{ fontSize: 12, color: "#aaa" }}>{r.channel} · {r.platform}</div>
-              </div>
-              <span style={{ fontSize: 12, background: r.active ? "#dcfce7" : "#f3f4f6", color: r.active ? "#166534" : "#888", padding: "3px 10px", borderRadius: 99, fontWeight: 600 }}>
-                {r.active ? "Activo" : "Pausado"}
-              </span>
-            </div>
-          ))}
-        </div>
+        )}
 
-        <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 12, padding: "14px 18px", fontSize: 13, color: "#92400e" }}>
-          💡 <strong>Tip:</strong> Para recibir webhooks en desarrollo, corre <code style={{ background: "#fef3c7", padding: "1px 6px", borderRadius: 4 }}>ngrok http 3001</code> y actualiza <code style={{ background: "#fef3c7", padding: "1px 6px", borderRadius: 4 }}>APP_URL</code> en tu <code style={{ background: "#fef3c7", padding: "1px 6px", borderRadius: 4 }}>.env</code>
-        </div>
+        {/* Error */}
+        {!loading && error && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 12, padding: "16px 20px", fontSize: 14, color: "#b91c1c", marginBottom: 24 }}>
+            ❌ {error}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && !error && stores.length === 0 && (
+          <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, padding: "48px 24px", textAlign: "center" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🛍️</div>
+            <p style={{ fontSize: 15, color: "#555", marginBottom: 20 }}>No hay tiendas conectadas aún.</p>
+            <Btn onClick={onConnectMore}>Conectar primera tienda</Btn>
+          </div>
+        )}
+
+        {/* Stores list */}
+        {!loading && !error && stores.length > 0 && (
+          <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+            {/* Header */}
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", gap: 0, padding: "12px 22px", borderBottom: "1px solid #f3f4f6", background: "#f9f9f9" }}>
+              {["Tienda", "Conectada", "Reglas", "Activas", "Estado"].map(h => (
+                <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "#aaa", letterSpacing: 0.5, textTransform: "uppercase" }}>{h}</span>
+              ))}
+            </div>
+
+            {/* Rows */}
+            {stores.map((store, i) => {
+              const isActive = store.activeRules > 0;
+              return (
+                <div key={store.domain} style={{
+                  display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr",
+                  padding: "16px 22px", alignItems: "center",
+                  borderBottom: i < stores.length - 1 ? "1px solid #f3f4f6" : "none",
+                }}>
+                  {/* Tienda */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: isActive ? "#22c55e" : "#e5e7eb", flexShrink: 0 }} />
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "#0a0a0a" }}>{store.domain}</div>
+                    </div>
+                  </div>
+
+                  {/* Conectada */}
+                  <span style={{ fontSize: 13, color: "#666" }}>{fmt(store.connectedAt)}</span>
+
+                  {/* Reglas */}
+                  <span style={{ fontSize: 14, fontWeight: 600, color: "#0a0a0a" }}>{store.rulesCount}</span>
+
+                  {/* Activas */}
+                  <span style={{ fontSize: 14, fontWeight: 600, color: store.activeRules > 0 ? "#16a34a" : "#aaa" }}>{store.activeRules}</span>
+
+                  {/* Estado */}
+                  <span style={{
+                    display: "inline-block",
+                    fontSize: 12, fontWeight: 600,
+                    padding: "3px 10px", borderRadius: 99,
+                    background: isActive ? "#dcfce7" : "#f3f4f6",
+                    color: isActive ? "#166534" : "#888",
+                  }}>
+                    {isActive ? "Activo" : "Sin reglas"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

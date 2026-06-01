@@ -4,7 +4,7 @@
  * Maneja:
  *  1. OAuth con Shopify (flujo completo "conectar con un clic")
  *  2. Registro automático de webhooks después de conectar
- *  3. Recepción de webhooks (app/uninstalled)
+ *  3. Recepción de webhooks (orders/fulfilled)
  *  4. Generación de mensaje con IA (Claude)
  *  5. Envío del email de solicitud de reseña (Resend)
  */
@@ -13,6 +13,13 @@ import express from "express";
 import cors from "cors";
 import crypto from "crypto";
 import "dotenv/config";
+import { createClient } from "@supabase/supabase-js";
+
+// ── Cliente Supabase ──────────────────────────────────────────────────────────
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -23,7 +30,7 @@ app.use(cors({ origin: "*" }));
 // IMPORTANTE: El webhook de Shopify necesita el body RAW para verificar la firma
 // Por eso parseamos JSON solo en rutas que no sean el webhook
 app.use((req, res, next) => {
-  if (req.path === "/webhooks/customers-create") {
+  if (req.path === "/webhooks/orders-fulfilled") {
     let rawBody = "";
     req.on("data", (chunk) => { rawBody += chunk; });
     req.on("end", () => {
@@ -36,15 +43,16 @@ app.use((req, res, next) => {
   }
 });
 
-// ── Almacenamiento en memoria (en producción usa PostgreSQL/Supabase) ─────────
-// Guarda: { shopDomain → { accessToken, rules, connectedAt } }
+// ── Almacenamiento en memoria (para reglas y webhook processing) ──────────────
+// Las tiendas y tokens se persisten en Supabase.
+// El Map se mantiene para lookups rápidos de reglas durante el procesamiento de webhooks.
 const stores = new Map();
 
 // Reglas de automatización por defecto al conectar una tienda
 const DEFAULT_RULES = [
   {
     id: "rule_1",
-    trigger: "app/uninstalled",
+    trigger: "orders/fulfilled",
     triggerLabel: "Pedido entregado",
     reviewPlatform: "Google",
     channel: "email",
@@ -66,14 +74,8 @@ app.get("/auth/shopify", (req, res) => {
     return res.status(400).json({ error: "Dominio de Shopify inválido" });
   }
 
-  // Generamos un 'state' aleatorio para proteger contra ataques CSRF
   const state = crypto.randomBytes(16).toString("hex");
-
-  // Permisos que necesita ReviewPilot:
-  // - read_orders: para leer datos del pedido y del cliente
-  // - write_script_tags: opcional, para tracking en la tienda
   const scopes = "read_orders,read_customers";
-
   const redirectUri = `${process.env.APP_URL}/auth/shopify/callback`;
 
   const authUrl =
@@ -84,9 +86,6 @@ app.get("/auth/shopify", (req, res) => {
     `&state=${state}`;
 
   console.log(`[OAuth] Iniciando flujo para tienda: ${shop}`);
-
-  // En producción: guardar el state en sesión o cookie firmada
-  // Aquí lo pasamos directo por simplicidad del ejemplo
   res.redirect(authUrl);
 });
 
@@ -97,7 +96,6 @@ app.get("/auth/shopify", (req, res) => {
 app.get("/auth/shopify/callback", async (req, res) => {
   const { shop, code, hmac, state } = req.query;
 
-  // Verificamos que la solicitud viene realmente de Shopify
   if (!verifyShopifyHmac(req.query, process.env.SHOPIFY_CLIENT_SECRET)) {
     return res.status(401).json({ error: "HMAC inválido. Solicitud no autorizada." });
   }
@@ -120,7 +118,7 @@ app.get("/auth/shopify/callback", async (req, res) => {
       return res.status(400).json({ error: "No se pudo obtener el access token" });
     }
 
-    // Guardamos la tienda y sus reglas por defecto
+    // Guardamos en Map para lookups rápidos durante procesamiento de webhooks
     stores.set(shop, {
       accessToken: access_token,
       rules: DEFAULT_RULES,
@@ -128,13 +126,33 @@ app.get("/auth/shopify/callback", async (req, res) => {
       shopDomain: shop,
     });
 
+    // ── Persistimos en Supabase ───────────────────────────────────────────────
+    // upsert: inserta si no existe, actualiza access_token si ya existe
+    const { error: dbError } = await supabase
+      .from("stores")
+      .upsert(
+        {
+          shop_domain: shop,
+          access_token: access_token,
+          connected_at: new Date().toISOString(),
+        },
+        { onConflict: "shop_domain" }
+      );
+
+    if (dbError) {
+      console.error(`[Supabase] ❌ Error guardando tienda ${shop}:`, dbError.message);
+    } else {
+      console.log(`[Supabase] ✅ Tienda guardada/actualizada: ${shop}`);
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     console.log(`[OAuth] ✅ Tienda conectada: ${shop}`);
 
-    // Registramos los webhooks automáticamente
     await registerWebhooks(shop, access_token);
 
-    // Redirigimos al dashboard con éxito
-    res.redirect(`/api/stores`);
+    // Redirigimos al frontend en Netlify
+    const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL;
+    res.redirect(`${frontendUrl}/dashboard?shop=${shop}&connected=true`);
 
   } catch (err) {
     console.error("[OAuth] Error en callback:", err);
@@ -144,11 +162,10 @@ app.get("/auth/shopify/callback", async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. REGISTRAR WEBHOOKS EN SHOPIFY
-//    Después de conectar, le decimos a Shopify que nos avise cuando:
-//    - Un pedido sea entregado (app/uninstalled)
+//    topic: app/uninstalled — no requiere permisos protegidos
 // ─────────────────────────────────────────────────────────────────────────────
 async function registerWebhooks(shop, accessToken) {
-  const webhookUrl = `${process.env.APP_URL}/webhooks/customers-create`;
+  const webhookUrl = `${process.env.APP_URL}/webhooks/orders-fulfilled`;
 
   const res = await fetch(`https://${shop}/admin/api/2024-01/webhooks.json`, {
     method: "POST",
@@ -158,8 +175,8 @@ async function registerWebhooks(shop, accessToken) {
     },
     body: JSON.stringify({
       webhook: {
-        topic: "app/uninstalled",       // Evento: pedido entregado
-        address: webhookUrl,              // URL de tu servidor
+        topic: "app/uninstalled",
+        address: webhookUrl,
         format: "json",
       },
     }),
@@ -169,54 +186,57 @@ async function registerWebhooks(shop, accessToken) {
 
   if (data.webhook) {
     console.log(`[Webhooks] ✅ Webhook registrado para ${shop}: app/uninstalled`);
+    return;
+  }
+
+  // "already been taken" = webhook ya existía → tratar como éxito
+  const errors = data.errors || {};
+  const alreadyExists =
+    JSON.stringify(errors).toLowerCase().includes("already been taken") ||
+    JSON.stringify(errors).toLowerCase().includes("already exists");
+
+  if (alreadyExists) {
+    console.log(`[Webhooks] ✅ Webhook ya existía para ${shop}: app/uninstalled (OK)`);
   } else {
-    console.error(`[Webhooks] ❌ Error registrando webhook:`, data.errors);
+    console.error(`[Webhooks] ❌ Error registrando webhook:`, errors);
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. RECIBIR WEBHOOK DE SHOPIFY
-//    Shopify llama a esta URL cada vez que un pedido es marcado como entregado
-//    POST /webhooks/customers-create
+//    POST /webhooks/orders-fulfilled
 // ─────────────────────────────────────────────────────────────────────────────
-app.post("/webhooks/customers-create", async (req, res) => {
+app.post("/webhooks/orders-fulfilled", async (req, res) => {
   const shopDomain = req.headers["x-shopify-shop-domain"];
   const hmacHeader = req.headers["x-shopify-hmac-sha256"];
 
-  // Verificamos la firma del webhook para confirmar que viene de Shopify
   if (!verifyWebhookSignature(req.rawBody, hmacHeader, process.env.SHOPIFY_CLIENT_SECRET)) {
     console.warn(`[Webhook] ⚠️ Firma inválida de ${shopDomain}`);
     return res.status(401).send("Unauthorized");
   }
 
-  // Respondemos rápido a Shopify (debe recibir 200 en menos de 5 segundos)
   res.status(200).send("OK");
-
-  // Procesamos el evento en background
   processOrderFulfilled(shopDomain, req.body).catch(console.error);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 5. PROCESAR PEDIDO ENTREGADO
-//    Extrae datos del cliente → genera mensaje con IA → envía email
 // ─────────────────────────────────────────────────────────────────────────────
 async function processOrderFulfilled(shopDomain, order) {
   console.log(`[Webhook] 📦 Pedido entregado en ${shopDomain}: #${order.order_number}`);
 
   const store = stores.get(shopDomain);
   if (!store) {
-    console.warn(`[Webhook] Tienda no encontrada: ${shopDomain}`);
+    console.warn(`[Webhook] Tienda no encontrada en memoria: ${shopDomain}`);
     return;
   }
 
-  // Buscamos la regla activa para 'app/uninstalled'
-  const rule = store.rules.find(r => r.trigger === "app/uninstalled" && r.active);
+  const rule = store.rules.find(r => r.trigger === "orders/fulfilled" && r.active);
   if (!rule) {
-    console.log(`[Webhook] No hay regla activa para app/uninstalled en ${shopDomain}`);
+    console.log(`[Webhook] No hay regla activa para orders/fulfilled en ${shopDomain}`);
     return;
   }
 
-  // Extraemos datos del cliente del payload de Shopify
   const customer = {
     firstName: order.customer?.first_name || "Cliente",
     lastName: order.customer?.last_name || "",
@@ -232,7 +252,6 @@ async function processOrderFulfilled(shopDomain, order) {
 
   console.log(`[AI] Generando mensaje para ${customer.firstName} ${customer.email}...`);
 
-  // Generamos el mensaje personalizado con Claude
   const message = await generateReviewMessage({
     customerName: customer.firstName,
     shopDomain,
@@ -240,7 +259,6 @@ async function processOrderFulfilled(shopDomain, order) {
     trigger: rule.triggerLabel,
   });
 
-  // Enviamos el email
   await sendReviewEmail({
     to: customer.email,
     customerName: customer.firstName,
@@ -362,18 +380,29 @@ async function sendReviewEmail({ to, customerName, message, reviewPlatform, shop
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 8. ENDPOINTS DE LA API (para el frontend del dashboard)
+// 8. ENDPOINTS DE LA API
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Ver tiendas conectadas
-app.get("/api/stores", (req, res) => {
-  const list = Array.from(stores.entries()).map(([domain, data]) => ({
-    domain,
-    connectedAt: data.connectedAt,
-    rulesCount: data.rules.length,
-    activeRules: data.rules.filter(r => r.active).length,
+// Ver tiendas conectadas — lee desde Supabase
+app.get("/api/stores", async (req, res) => {
+  const { data, error } = await supabase
+    .from("stores")
+    .select("*")
+    .order("connected_at", { ascending: false });
+
+  if (error) {
+    console.error("[Supabase] Error leyendo stores:", error.message);
+    return res.status(500).json({ error: "Error leyendo tiendas desde Supabase" });
+  }
+
+  const list = data.map(row => ({
+    domain: row.shop_domain,
+    connectedAt: row.connected_at,
+    rulesCount: DEFAULT_RULES.length,
+    activeRules: DEFAULT_RULES.filter(r => r.active).length,
   }));
-  res.json({ stores: list });
+
+  res.json({ stores: list, source: "supabase" });
 });
 
 // Ver reglas de una tienda
@@ -399,7 +428,7 @@ app.patch("/api/stores/:shop/rules/:ruleId", (req, res) => {
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
-    stores: stores.size,
+    stores_in_memory: stores.size,
     timestamp: new Date().toISOString(),
   });
 });
@@ -408,12 +437,10 @@ app.get("/health", (req, res) => {
 // UTILIDADES
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Valida que el dominio tiene formato correcto de Shopify
 function isValidShopDomain(shop) {
   return /^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/.test(shop);
 }
 
-// Verifica el HMAC que Shopify manda en el callback OAuth
 function verifyShopifyHmac(queryParams, secret) {
   const { hmac, ...rest } = queryParams;
   const message = Object.keys(rest)
@@ -429,7 +456,6 @@ function verifyShopifyHmac(queryParams, secret) {
   return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(hmac));
 }
 
-// Verifica la firma del body del webhook
 function verifyWebhookSignature(rawBody, hmacHeader, secret) {
   if (!hmacHeader) return false;
   const digest = crypto
@@ -450,8 +476,8 @@ app.listen(PORT, () => {
   Endpoints:
   → GET  /auth/shopify              Iniciar OAuth
   → GET  /auth/shopify/callback     Callback OAuth
-  → POST /webhooks/customers-create Recibir webhooks
-  → GET  /api/stores                Ver tiendas conectadas
+  → POST /webhooks/orders-fulfilled Recibir webhooks
+  → GET  /api/stores                Ver tiendas (Supabase)
   → GET  /health                    Health check
   `);
 });

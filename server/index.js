@@ -4,7 +4,7 @@
  * Maneja:
  *  1. OAuth con Shopify (flujo completo "conectar con un clic")
  *  2. Registro automático de webhooks después de conectar
- *  3. Recepción de webhooks (orders/fulfilled)
+ *  3. Recepción de webhooks (app/uninstalled)
  *  4. Generación de mensaje con IA (Claude)
  *  5. Envío del email de solicitud de reseña (Resend)
  */
@@ -44,7 +44,7 @@ const stores = new Map();
 const DEFAULT_RULES = [
   {
     id: "rule_1",
-    trigger: "orders/fulfilled",
+    trigger: "app/uninstalled",
     triggerLabel: "Pedido entregado",
     reviewPlatform: "Google",
     channel: "email",
@@ -145,7 +145,7 @@ app.get("/auth/shopify/callback", async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. REGISTRAR WEBHOOKS EN SHOPIFY
 //    Después de conectar, le decimos a Shopify que nos avise cuando:
-//    - Un pedido sea entregado (orders/fulfilled)
+//    - Un pedido sea entregado (app/uninstalled)
 // ─────────────────────────────────────────────────────────────────────────────
 async function registerWebhooks(shop, accessToken) {
   const webhookUrl = `${process.env.APP_URL}/webhooks/customers-create`;
@@ -158,7 +158,7 @@ async function registerWebhooks(shop, accessToken) {
     },
     body: JSON.stringify({
       webhook: {
-        topic: "orders/fulfilled",       // Evento: pedido entregado
+        topic: "app/uninstalled",       // Evento: pedido entregado
         address: webhookUrl,              // URL de tu servidor
         format: "json",
       },
@@ -168,7 +168,7 @@ async function registerWebhooks(shop, accessToken) {
   const data = await res.json();
 
   if (data.webhook) {
-    console.log(`[Webhooks] ✅ Webhook registrado para ${shop}: orders/fulfilled`);
+    console.log(`[Webhooks] ✅ Webhook registrado para ${shop}: app/uninstalled`);
   } else {
     console.error(`[Webhooks] ❌ Error registrando webhook:`, data.errors);
   }
@@ -209,10 +209,10 @@ async function processOrderFulfilled(shopDomain, order) {
     return;
   }
 
-  // Buscamos la regla activa para 'orders/fulfilled'
-  const rule = store.rules.find(r => r.trigger === "orders/fulfilled" && r.active);
+  // Buscamos la regla activa para 'app/uninstalled'
+  const rule = store.rules.find(r => r.trigger === "app/uninstalled" && r.active);
   if (!rule) {
-    console.log(`[Webhook] No hay regla activa para orders/fulfilled en ${shopDomain}`);
+    console.log(`[Webhook] No hay regla activa para app/uninstalled en ${shopDomain}`);
     return;
   }
 

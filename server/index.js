@@ -383,25 +383,67 @@ async function sendReviewEmail({ to, customerName, message, reviewPlatform, shop
 // 8. ENDPOINTS DE LA API
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Ver tiendas conectadas — lee desde Supabase
+// Ver tiendas conectadas — lee exclusivamente desde Supabase
+// Incluye reglas asociadas desde la tabla rules
 app.get("/api/stores", async (req, res) => {
-  const { data, error } = await supabase
+  console.log("[Supabase] GET /api/stores — consultando tabla stores...");
+
+  // 1. Leer todas las tiendas
+  const { data: storesData, error: storesError } = await supabase
     .from("stores")
     .select("*")
     .order("connected_at", { ascending: false });
 
-  if (error) {
-    console.error("[Supabase] Error leyendo stores:", error.message);
-    return res.status(500).json({ error: "Error leyendo tiendas desde Supabase" });
+  if (storesError) {
+    console.error("[Supabase] ❌ Error leyendo stores:", storesError.message, storesError.details, storesError.hint);
+    return res.status(500).json({
+      error: "Error leyendo tiendas desde Supabase",
+      detail: storesError.message,
+    });
   }
 
-  const list = data.map(row => ({
-    domain: row.shop_domain,
-    connectedAt: row.connected_at,
-    rulesCount: DEFAULT_RULES.length,
-    activeRules: DEFAULT_RULES.filter(r => r.active).length,
-  }));
+  console.log(`[Supabase] ✅ Tiendas encontradas: ${storesData.length}`);
 
+  // 2. Para cada tienda, leer sus reglas desde la tabla rules
+  const list = await Promise.all(
+    storesData.map(async (store) => {
+      console.log(`[Supabase] Consultando reglas para: ${store.shop_domain}`);
+
+      const { data: rulesData, error: rulesError } = await supabase
+        .from("rules")
+        .select("*")
+        .eq("shop_domain", store.shop_domain);
+
+      if (rulesError) {
+        console.error(
+          `[Supabase] ❌ Error leyendo reglas para ${store.shop_domain}:`,
+          rulesError.message,
+          rulesError.details,
+          rulesError.hint
+        );
+        // Si falla la lectura de reglas, devolvemos la tienda con conteo 0
+        return {
+          domain: store.shop_domain,
+          connectedAt: store.connected_at,
+          rulesCount: 0,
+          activeRules: 0,
+          rulesError: rulesError.message,
+        };
+      }
+
+      const rules = rulesData || [];
+      console.log(`[Supabase] ✅ Reglas para ${store.shop_domain}: ${rules.length} total, ${rules.filter(r => r.active).length} activas`);
+
+      return {
+        domain: store.shop_domain,
+        connectedAt: store.connected_at,
+        rulesCount: rules.length,
+        activeRules: rules.filter(r => r.active).length,
+      };
+    })
+  );
+
+  console.log("[Supabase] ✅ Respuesta de /api/stores lista");
   res.json({ stores: list, source: "supabase" });
 });
 

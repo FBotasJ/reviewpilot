@@ -412,7 +412,7 @@ app.get("/api/stores", async (req, res) => {
       const { data: rulesData, error: rulesError } = await supabase
         .from("rules")
         .select("*")
-        .eq("shop_domain", store.shop_domain);
+        .eq("store_id", store.id);
 
       if (rulesError) {
         console.error(
@@ -432,7 +432,7 @@ app.get("/api/stores", async (req, res) => {
       }
 
       const rules = rulesData || [];
-      console.log(`[Supabase] ✅ Reglas para ${store.shop_domain}: ${rules.length} total, ${rules.filter(r => r.active).length} activas`);
+      console.log(`[Supabase] ✅ Reglas para ${store.shop_domain} (id: ${store.id}): ${rules.length} total, ${rules.filter(r => r.active).length} activas`);
 
       return {
         domain: store.shop_domain,

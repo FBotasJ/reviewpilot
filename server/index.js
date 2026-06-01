@@ -134,7 +134,7 @@ app.get("/auth/shopify/callback", async (req, res) => {
     await registerWebhooks(shop, access_token);
 
     // Redirigimos al dashboard con éxito
-    res.redirect(`${process.env.APP_URL}/dashboard?shop=${shop}&connected=true`);
+    res.redirect(`/api/stores`);
 
   } catch (err) {
     console.error("[OAuth] Error en callback:", err);

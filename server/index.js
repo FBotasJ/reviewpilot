@@ -4,7 +4,7 @@
  * Maneja:
  *  1. OAuth con Shopify (flujo completo "conectar con un clic")
  *  2. Registro automático de webhooks después de conectar
- *  3. Recepción de webhooks (orders/fulfilled)
+ *  3. Recepción de webhooks (orders/paid)
  *  4. Generación de mensaje con IA (Claude)
  *  5. Envío del email de solicitud de reseña (Resend)
  */
@@ -23,7 +23,7 @@ app.use(cors({ origin: "*" }));
 // IMPORTANTE: El webhook de Shopify necesita el body RAW para verificar la firma
 // Por eso parseamos JSON solo en rutas que no sean el webhook
 app.use((req, res, next) => {
-  if (req.path === "/webhooks/orders-fulfilled") {
+  if (req.path === "/webhooks/orders-paid") {
     let rawBody = "";
     req.on("data", (chunk) => { rawBody += chunk; });
     req.on("end", () => {
@@ -44,7 +44,7 @@ const stores = new Map();
 const DEFAULT_RULES = [
   {
     id: "rule_1",
-    trigger: "orders/fulfilled",
+    trigger: "orders/paid",
     triggerLabel: "Pedido entregado",
     reviewPlatform: "Google",
     channel: "email",
@@ -145,10 +145,10 @@ app.get("/auth/shopify/callback", async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. REGISTRAR WEBHOOKS EN SHOPIFY
 //    Después de conectar, le decimos a Shopify que nos avise cuando:
-//    - Un pedido sea entregado (orders/fulfilled)
+//    - Un pedido sea entregado (orders/paid)
 // ─────────────────────────────────────────────────────────────────────────────
 async function registerWebhooks(shop, accessToken) {
-  const webhookUrl = `${process.env.APP_URL}/webhooks/orders-fulfilled`;
+  const webhookUrl = `${process.env.APP_URL}/webhooks/orders-paid`;
 
   const res = await fetch(`https://${shop}/admin/api/2024-01/webhooks.json`, {
     method: "POST",
@@ -158,7 +158,7 @@ async function registerWebhooks(shop, accessToken) {
     },
     body: JSON.stringify({
       webhook: {
-        topic: "orders/fulfilled",       // Evento: pedido entregado
+        topic: "orders/paid",       // Evento: pedido entregado
         address: webhookUrl,              // URL de tu servidor
         format: "json",
       },
@@ -168,7 +168,7 @@ async function registerWebhooks(shop, accessToken) {
   const data = await res.json();
 
   if (data.webhook) {
-    console.log(`[Webhooks] ✅ Webhook registrado para ${shop}: orders/fulfilled`);
+    console.log(`[Webhooks] ✅ Webhook registrado para ${shop}: orders/paid`);
   } else {
     console.error(`[Webhooks] ❌ Error registrando webhook:`, data.errors);
   }
@@ -177,9 +177,9 @@ async function registerWebhooks(shop, accessToken) {
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. RECIBIR WEBHOOK DE SHOPIFY
 //    Shopify llama a esta URL cada vez que un pedido es marcado como entregado
-//    POST /webhooks/orders-fulfilled
+//    POST /webhooks/orders-paid
 // ─────────────────────────────────────────────────────────────────────────────
-app.post("/webhooks/orders-fulfilled", async (req, res) => {
+app.post("/webhooks/orders-paid", async (req, res) => {
   const shopDomain = req.headers["x-shopify-shop-domain"];
   const hmacHeader = req.headers["x-shopify-hmac-sha256"];
 
@@ -209,10 +209,10 @@ async function processOrderFulfilled(shopDomain, order) {
     return;
   }
 
-  // Buscamos la regla activa para 'orders/fulfilled'
-  const rule = store.rules.find(r => r.trigger === "orders/fulfilled" && r.active);
+  // Buscamos la regla activa para 'orders/paid'
+  const rule = store.rules.find(r => r.trigger === "orders/paid" && r.active);
   if (!rule) {
-    console.log(`[Webhook] No hay regla activa para orders/fulfilled en ${shopDomain}`);
+    console.log(`[Webhook] No hay regla activa para orders/paid en ${shopDomain}`);
     return;
   }
 
@@ -450,7 +450,7 @@ app.listen(PORT, () => {
   Endpoints:
   → GET  /auth/shopify              Iniciar OAuth
   → GET  /auth/shopify/callback     Callback OAuth
-  → POST /webhooks/orders-fulfilled Recibir webhooks
+  → POST /webhooks/orders-paid Recibir webhooks
   → GET  /api/stores                Ver tiendas conectadas
   → GET  /health                    Health check
   `);

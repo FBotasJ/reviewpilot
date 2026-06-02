@@ -327,14 +327,46 @@ function ShopifyConnect({ onBack, onDone }) {
 }
 
 /* ─── STORE DETAIL ───────────────────────────────────────────────────────── */
-function StoreDetail({ store, onBack }) {
-  const [desactivado, setDesactivado] = useState(false);
+function StoreDetail({ store, onBack, onStoreUpdated }) {
+  // Inicializa reglas desde los datos reales que vienen de /api/stores
+  const [rules, setRules] = useState(
+    store.rules && store.rules.length > 0
+      ? store.rules
+      : [{ id: null, triggerLabel: "Pedido entregado", channel: "email", reviewPlatform: "Google", active: true }]
+  );
+  const [saving, setSaving] = useState(null); // id de regla que se está guardando
 
-  const steps = [
-    { icon: "📦", label: "Pedido entregado" },
-    { icon: "⏱️", label: "Esperar 7 días" },
-    { icon: "✉️", label: "Canal: Email" },
-  ];
+  const toggleRule = async (rule) => {
+    if (!rule.id) return; // sin id real no podemos hacer PATCH
+    setSaving(rule.id);
+
+    try {
+      const res = await fetch(
+        `https://reviewpilot-production-3183.up.railway.app/api/stores/${encodeURIComponent(store.domain)}/rules/${rule.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ active: !rule.active }),
+        }
+      );
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      // Actualiza el estado local
+      setRules(prev =>
+        prev.map(r => r.id === rule.id ? { ...r, active: data.rule.active } : r)
+      );
+      // Notifica al dashboard para que refresque los conteos
+      if (onStoreUpdated) onStoreUpdated();
+    } catch (err) {
+      alert("Error actualizando la regla. Intenta de nuevo.");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const stepIcons = { "orders/fulfilled": "📦", email: "✉️", Email: "✉️", whatsapp: "💬", sms: "📱" };
 
   return (
     <div style={{ minHeight: "100vh", background: "#fafafa", fontFamily: BODY }}>
@@ -361,8 +393,8 @@ function StoreDetail({ store, onBack }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
             {[
               ["Conectada", new Date(store.connectedAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })],
-              ["Total reglas", store.rulesCount],
-              ["Reglas activas", store.activeRules],
+              ["Total reglas", rules.length],
+              ["Reglas activas", rules.filter(r => r.active).length],
             ].map(([label, val]) => (
               <div key={label}>
                 <div style={{ fontSize: 11, color: "#aaa", fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 6 }}>{label}</div>
@@ -372,70 +404,88 @@ function StoreDetail({ store, onBack }) {
           </div>
         </div>
 
-        {/* Rule card */}
-        <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", marginBottom: 20 }}>
-          {/* Card header */}
-          <div style={{ padding: "18px 26px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a" }}>Regla activa</div>
-              <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>Solicitud de reseña automática</div>
-            </div>
-            <span style={{
-              fontSize: 12, fontWeight: 600, padding: "3px 12px", borderRadius: 99,
-              background: desactivado ? "#f3f4f6" : "#dcfce7",
-              color: desactivado ? "#888" : "#166534",
-            }}>
-              {desactivado ? "Desactivada" : "Activa"}
-            </span>
+        {/* Rules list */}
+        {rules.length === 0 && (
+          <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, padding: "32px", textAlign: "center" }}>
+            <p style={{ fontSize: 14, color: "#aaa" }}>No hay reglas configuradas para esta tienda.</p>
           </div>
+        )}
 
-          {/* Steps */}
-          <div style={{ padding: "22px 26px" }}>
-            {steps.map((step, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: i < steps.length - 1 ? 16 : 0 }}>
-                {/* Icon + line */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: "50%",
-                    background: desactivado ? "#f3f4f6" : "#f0fdf4",
-                    border: `1.5px solid ${desactivado ? "#e5e7eb" : "#bbf7d0"}`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 16,
-                  }}>
-                    {step.icon}
+        {rules.map((rule) => {
+          const isSaving = saving === rule.id;
+          const steps = [
+            { icon: "📦", label: rule.triggerLabel || "Pedido entregado" },
+            { icon: "⏱️", label: "Esperar 7 días" },
+            { icon: stepIcons[rule.channel] || "✉️", label: `Canal: ${rule.channel || "Email"}` },
+          ];
+
+          return (
+            <div key={rule.id || "default"} style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", marginBottom: 16 }}>
+              {/* Card header */}
+              <div style={{ padding: "18px 26px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a" }}>Regla automática</div>
+                  <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>
+                    {rule.reviewPlatform || "Google"} · {rule.channel || "Email"}
                   </div>
-                  {i < steps.length - 1 && (
-                    <div style={{ width: 2, height: 20, background: "#f0f0f0", marginTop: 4 }} />
-                  )}
                 </div>
-                {/* Label */}
-                <div style={{ paddingTop: 7 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: desactivado ? "#aaa" : "#0a0a0a" }}>
-                    {desactivado ? "" : "✓ "}{step.label}
-                  </span>
-                </div>
+                <span style={{
+                  fontSize: 12, fontWeight: 600, padding: "3px 12px", borderRadius: 99,
+                  background: rule.active ? "#dcfce7" : "#f3f4f6",
+                  color: rule.active ? "#166534" : "#888",
+                }}>
+                  {rule.active ? "Activa" : "Desactivada"}
+                </span>
               </div>
-            ))}
-          </div>
 
-          {/* Actions */}
-          <div style={{ padding: "16px 26px", borderTop: "1px solid #f3f4f6", display: "flex", gap: 10 }}>
-            <Btn variant="light" size="sm" onClick={() => alert("Editar regla — próximamente")}>
-              ✏️ Editar
-            </Btn>
-            <Btn
-              variant={desactivado ? "dark" : "ghost"}
-              size="sm"
-              onClick={() => setDesactivado(d => !d)}
-            >
-              {desactivado ? "✓ Activar" : "⏸ Desactivar"}
-            </Btn>
-          </div>
-        </div>
+              {/* Steps */}
+              <div style={{ padding: "22px 26px" }}>
+                {steps.map((step, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: i < steps.length - 1 ? 16 : 0 }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <div style={{
+                        width: 36, height: 36, borderRadius: "50%",
+                        background: rule.active ? "#f0fdf4" : "#f3f4f6",
+                        border: `1.5px solid ${rule.active ? "#bbf7d0" : "#e5e7eb"}`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 16,
+                      }}>
+                        {step.icon}
+                      </div>
+                      {i < steps.length - 1 && (
+                        <div style={{ width: 2, height: 20, background: "#f0f0f0", marginTop: 4 }} />
+                      )}
+                    </div>
+                    <div style={{ paddingTop: 7 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: rule.active ? "#0a0a0a" : "#aaa" }}>
+                        {rule.active ? "✓ " : ""}{step.label}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Actions */}
+              <div style={{ padding: "16px 26px", borderTop: "1px solid #f3f4f6", display: "flex", gap: 10 }}>
+                <Btn variant="light" size="sm" onClick={() => alert("Editar regla — próximamente")}>
+                  ✏️ Editar
+                </Btn>
+                <Btn
+                  variant={rule.active ? "ghost" : "dark"}
+                  size="sm"
+                  disabled={isSaving || !rule.id}
+                  onClick={() => toggleRule(rule)}
+                >
+                  {isSaving ? "Guardando…" : rule.active ? "⏸ Desactivar" : "✓ Activar"}
+                </Btn>
+              </div>
+            </div>
+          );
+        })}
 
         {/* Source badge */}
         {store.source && (
-          <p style={{ fontSize: 12, color: "#bbb", textAlign: "right" }}>
+          <p style={{ fontSize: 12, color: "#bbb", textAlign: "right", marginTop: 8 }}>
             Fuente: {store.source}
           </p>
         )}
@@ -451,7 +501,8 @@ function Dashboard({ onConnectMore }) {
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null); // tienda seleccionada para detalle
 
-  useEffect(() => {
+  const fetchStores = () => {
+    setLoading(true);
     fetch("https://reviewpilot-production-3183.up.railway.app/api/stores")
       .then(r => r.json())
       .then(data => {
@@ -462,11 +513,22 @@ function Dashboard({ onConnectMore }) {
         setError("No se pudo conectar con el servidor.");
         setLoading(false);
       });
-  }, []);
+  };
+
+  useEffect(() => { fetchStores(); }, []);
 
   // Si hay tienda seleccionada, mostrar detalle
   if (selected) {
-    return <StoreDetail store={selected} onBack={() => setSelected(null)} />;
+    return (
+      <StoreDetail
+        store={selected}
+        onBack={() => setSelected(null)}
+        onStoreUpdated={() => {
+          fetchStores();
+          setSelected(null); // vuelve al dashboard con datos frescos
+        }}
+      />
+    );
   }
 
   const fmt = (iso) => {

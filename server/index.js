@@ -439,6 +439,15 @@ app.get("/api/stores", async (req, res) => {
         connectedAt: store.connected_at,
         rulesCount: rules.length,
         activeRules: rules.filter(r => r.active).length,
+        // Incluimos las reglas completas para que el frontend pueda usar sus IDs
+        rules: rules.map(r => ({
+          id: r.id,
+          trigger: r.trigger || "orders/fulfilled",
+          triggerLabel: r.trigger_label || "Pedido entregado",
+          reviewPlatform: r.review_platform || "Google",
+          channel: r.channel || "email",
+          active: r.active,
+        })),
       };
     })
   );
@@ -454,16 +463,31 @@ app.get("/api/stores/:shop/rules", (req, res) => {
   res.json({ rules: store.rules });
 });
 
-// Activar/pausar una regla
-app.patch("/api/stores/:shop/rules/:ruleId", (req, res) => {
-  const store = stores.get(req.params.shop);
-  if (!store) return res.status(404).json({ error: "Tienda no encontrada" });
+// Activar/pausar una regla — actualiza en Supabase
+app.patch("/api/stores/:shop/rules/:ruleId", async (req, res) => {
+  const { shop, ruleId } = req.params;
+  const { active } = req.body;
 
-  const rule = store.rules.find(r => r.id === req.params.ruleId);
-  if (!rule) return res.status(404).json({ error: "Regla no encontrada" });
+  if (active === undefined) {
+    return res.status(400).json({ error: "El campo 'active' es requerido" });
+  }
 
-  rule.active = req.body.active ?? rule.active;
-  res.json({ rule });
+  console.log(`[Supabase] PATCH regla ${ruleId} para ${shop} → active: ${active}`);
+
+  const { data, error } = await supabase
+    .from("rules")
+    .update({ active })
+    .eq("id", ruleId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error(`[Supabase] ❌ Error actualizando regla ${ruleId}:`, error.message);
+    return res.status(500).json({ error: "Error actualizando regla en Supabase", detail: error.message });
+  }
+
+  console.log(`[Supabase] ✅ Regla ${ruleId} actualizada → active: ${data.active}`);
+  res.json({ rule: { id: data.id, active: data.active } });
 });
 
 // Health check

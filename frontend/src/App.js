@@ -334,10 +334,11 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
       : [{ id: null, triggerLabel: "Pedido entregado", channel: "email", reviewPlatform: "Google", active: true }]
   );
   const [saving, setSaving] = useState(null);
-  const [editing, setEditing] = useState(null); // { ruleId, delay_days, channel, prompt }
-  const [creating, setCreating] = useState(false); // formulario de nueva regla
+  const [editing, setEditing] = useState(null);
+  const [creating, setCreating] = useState(false);
   const [newRule, setNewRule] = useState({ delay_days: 7, channel: "email", prompt: "" });
   const [creating_saving, setCreatingSaving] = useState(false);
+  const [confirming, setConfirming] = useState(null); // ruleId pendiente de confirmar eliminación
 
   // ── Toggle activo/inactivo ─────────────────────────────────────────────────
   const toggleRule = async (rule) => {
@@ -430,6 +431,29 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
       alert(`Error creando la regla: ${err.message}`);
     } finally {
       setCreatingSaving(false);
+    }
+  };
+
+  // ── Eliminar regla ─────────────────────────────────────────────────────────
+  const deleteRule = async (ruleId) => {
+    setSaving(ruleId);
+    console.log(`[ReviewPilot] DELETE regla id=${ruleId}`);
+    try {
+      const res = await fetch(
+        `https://reviewpilot-production-3183.up.railway.app/api/rules/${ruleId}`,
+        { method: "DELETE" }
+      );
+      const text = await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+      // Elimina la tarjeta del estado local
+      setRules(prev => prev.filter(r => r.id !== ruleId));
+      setConfirming(null);
+      if (onStoreUpdated) onStoreUpdated();
+    } catch (err) {
+      console.error("[ReviewPilot] Error deleteRule:", err.message);
+      alert(`Error eliminando la regla: ${err.message}`);
+    } finally {
+      setSaving(null);
     }
   };
 
@@ -574,7 +598,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
               )}
 
               {/* Actions (ocultos mientras se edita) */}
-              {!isEditing && (
+              {!isEditing && confirming !== rule.id && (
                 <div style={{ padding: "16px 26px", borderTop: "1px solid #f3f4f6", display: "flex", gap: 10 }}>
                   <Btn
                     variant="light" size="sm" disabled={!rule.id}
@@ -589,6 +613,35 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
                   >
                     {isSaving ? "Guardando…" : rule.active ? "⏸ Desactivar" : "✓ Activar"}
                   </Btn>
+                  <Btn
+                    variant="light" size="sm" disabled={!rule.id}
+                    onClick={() => setConfirming(rule.id)}
+                    style={{ marginLeft: "auto", color: "#dc2626", borderColor: "#fecaca" }}
+                  >
+                    🗑 Eliminar
+                  </Btn>
+                </div>
+              )}
+
+              {/* Confirmación de eliminación */}
+              {!isEditing && confirming === rule.id && (
+                <div style={{ padding: "18px 26px", borderTop: "1px solid #fecaca", background: "#fef2f2" }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "#b91c1c", marginBottom: 14 }}>
+                    ¿Seguro que deseas eliminar esta automatización?
+                  </p>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <Btn
+                      size="sm"
+                      disabled={isSaving}
+                      onClick={() => deleteRule(rule.id)}
+                      style={{ background: "#dc2626", color: "#fff", border: "none" }}
+                    >
+                      {isSaving ? "Eliminando…" : "Eliminar"}
+                    </Btn>
+                    <Btn variant="light" size="sm" onClick={() => setConfirming(null)}>
+                      Cancelar
+                    </Btn>
+                  </div>
                 </div>
               )}
             </div>

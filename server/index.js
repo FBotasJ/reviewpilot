@@ -576,6 +576,26 @@ app.patch("/api/stores/:shop/rules/:ruleId", async (req, res) => {
   res.json({ rule: data });
 });
 
+// Eliminar una regla — borra de Supabase
+app.delete("/api/rules/:ruleId", async (req, res) => {
+  const { ruleId } = req.params;
+
+  console.log(`[DELETE] Eliminando regla id=${ruleId}`);
+
+  const { error } = await supabase
+    .from("rules")
+    .delete()
+    .eq("id", ruleId);
+
+  if (error) {
+    console.error(`[Supabase] ❌ Error eliminando regla ${ruleId}:`, error.message);
+    return res.status(500).json({ error: "Error eliminando regla en Supabase", detail: error.message });
+  }
+
+  console.log(`[Supabase] ✅ Regla ${ruleId} eliminada`);
+  res.json({ success: true });
+});
+
 // Health check
 app.get("/health", (req, res) => {
   res.json({

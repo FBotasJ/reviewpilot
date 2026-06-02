@@ -447,6 +447,8 @@ app.get("/api/stores", async (req, res) => {
           reviewPlatform: r.review_platform || "Google",
           channel: r.channel || "email",
           active: r.active,
+          delay_days: r.delay_days ?? 7,
+          prompt: r.prompt || "",
         })),
       };
     })

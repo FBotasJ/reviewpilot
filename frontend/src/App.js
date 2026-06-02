@@ -338,7 +338,8 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
   const [creating, setCreating] = useState(false);
   const [newRule, setNewRule] = useState({ delay_days: 7, channel: "email", prompt: "" });
   const [creating_saving, setCreatingSaving] = useState(false);
-  const [confirming, setConfirming] = useState(null); // ruleId pendiente de confirmar eliminación
+  const [confirming, setConfirming] = useState(null);
+  const [previews, setPreviews] = useState({}); // { ruleId: { loading, message, error } }
 
   // ── Toggle activo/inactivo ─────────────────────────────────────────────────
   const toggleRule = async (rule) => {
@@ -457,6 +458,25 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
     }
   };
 
+  // ── Vista previa con IA ────────────────────────────────────────────────────
+  const generatePreview = async (ruleId) => {
+    setPreviews(prev => ({ ...prev, [ruleId]: { loading: true, message: null, error: null } }));
+    console.log(`[ReviewPilot] POST preview → ruleId=${ruleId}`);
+    try {
+      const res = await fetch(
+        `https://reviewpilot-production-3183.up.railway.app/api/rules/${ruleId}/preview`,
+        { method: "POST", headers: { "Content-Type": "application/json" } }
+      );
+      const text = await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+      const data = JSON.parse(text);
+      setPreviews(prev => ({ ...prev, [ruleId]: { loading: false, message: data.message, error: null } }));
+    } catch (err) {
+      console.error("[ReviewPilot] Error preview:", err.message);
+      setPreviews(prev => ({ ...prev, [ruleId]: { loading: false, message: null, error: "No se pudo generar la vista previa. Intenta de nuevo." } }));
+    }
+  };
+
   const stepIcons = { "orders/fulfilled": "📦", email: "✉️", Email: "✉️", whatsapp: "💬", sms: "📱" };
   const inp = { border: "1.5px solid #e5e7eb", borderRadius: 10, padding: "10px 14px", fontSize: 14, fontFamily: BODY, width: "100%", outline: "none" };
 
@@ -541,6 +561,77 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
                   ))}
                 </div>
               )}
+
+              {/* Vista previa con IA */}
+              {!isEditing && rule.id && (() => {
+                const p = previews[rule.id];
+                return (
+                  <div style={{ padding: "0 26px 20px" }}>
+                    {/* Botón */}
+                    {(!p || (!p.loading && !p.message && !p.error)) && (
+                      <button
+                        onClick={() => generatePreview(rule.id)}
+                        style={{
+                          background: "none", border: "1.5px solid #e5e7eb",
+                          borderRadius: 10, padding: "8px 16px",
+                          fontSize: 13, fontWeight: 600, cursor: "pointer",
+                          color: "#555", fontFamily: BODY,
+                          display: "flex", alignItems: "center", gap: 6,
+                          transition: "all 0.15s",
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = "#0a0a0a"; e.currentTarget.style.color = "#0a0a0a"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#555"; }}
+                      >
+                        🤖 Vista previa con IA
+                      </button>
+                    )}
+
+                    {/* Cargando */}
+                    {p?.loading && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0" }}>
+                        <div style={{ width: 16, height: 16, border: "2px solid #e5e7eb", borderTopColor: "#0a0a0a", borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
+                        <span style={{ fontSize: 13, color: "#888", fontFamily: BODY }}>Generando mensaje con IA…</span>
+                      </div>
+                    )}
+
+                    {/* Mensaje generado */}
+                    {p?.message && (
+                      <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 12, padding: "16px 18px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "#aaa", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                            🤖 Ejemplo generado con IA
+                          </span>
+                          <button
+                            onClick={() => generatePreview(rule.id)}
+                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#888", fontFamily: BODY, padding: 0 }}
+                          >
+                            ↻ Regenerar
+                          </button>
+                        </div>
+                        <p style={{ fontSize: 14, color: "#333", lineHeight: 1.7, margin: 0, fontFamily: BODY }}>
+                          {p.message}
+                        </p>
+                        <p style={{ fontSize: 11, color: "#bbb", marginTop: 10, margin: "10px 0 0" }}>
+                          Cliente de ejemplo: Carlos · Tienda: ReviewPilot Demo
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Error */}
+                    {p?.error && (
+                      <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 13, color: "#b91c1c", fontFamily: BODY }}>⚠️ {p.error}</span>
+                        <button
+                          onClick={() => generatePreview(rule.id)}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#b91c1c", fontFamily: BODY, padding: 0, fontWeight: 600 }}
+                        >
+                          Reintentar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Formulario de edición */}
               {isEditing && (

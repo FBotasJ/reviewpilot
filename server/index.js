@@ -596,6 +596,82 @@ app.delete("/api/rules/:ruleId", async (req, res) => {
   res.json({ success: true });
 });
 
+// Vista previa con IA — genera mensaje de ejemplo para una regla
+app.post("/api/rules/:ruleId/preview", async (req, res) => {
+  const { ruleId } = req.params;
+
+  console.log(`[Preview] Generando vista previa para regla ${ruleId}`);
+
+  // 1. Buscar la regla en Supabase
+  const { data: rule, error: ruleError } = await supabase
+    .from("rules")
+    .select("id, trigger, trigger_label, review_platform, channel, delay_days, prompt")
+    .eq("id", ruleId)
+    .single();
+
+  if (ruleError || !rule) {
+    console.error(`[Preview] ❌ Regla no encontrada: ${ruleId}`, ruleError?.message);
+    return res.status(404).json({ error: `Regla '${ruleId}' no encontrada` });
+  }
+
+  // 2. Datos ficticios del cliente para la vista previa
+  const demoCustomer = {
+    name: "Carlos",
+    product: "pedido reciente",
+    store: "ReviewPilot Demo",
+  };
+
+  // 3. Construir el prompt para Claude
+  const systemPrompt = rule.prompt && rule.prompt.trim()
+    ? rule.prompt
+    : `Escribe un mensaje corto y natural (máximo 3 oraciones) para pedirle una reseña a un cliente. El mensaje debe ser cálido, breve y terminar con una llamada a la acción.`;
+
+  const userContent = `${systemPrompt}
+
+Datos del cliente:
+- Nombre: ${demoCustomer.name}
+- Producto: ${demoCustomer.product}
+- Tienda: ${demoCustomer.store}
+- Plataforma de reseña: ${rule.review_platform || "Google"}
+- Canal de envío: ${rule.channel || "email"}
+- Días después del evento: ${rule.delay_days ?? 7}
+
+Solo devuelve el mensaje final, sin comillas ni explicaciones adicionales.`;
+
+  console.log(`[Preview] Llamando a Claude para regla ${ruleId}...`);
+
+  try {
+    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 300,
+        messages: [{ role: "user", content: userContent }],
+      }),
+    });
+
+    const aiData = await aiRes.json();
+    const message = aiData.content?.[0]?.text;
+
+    if (!message) {
+      console.error("[Preview] Claude no devolvió texto:", aiData);
+      return res.status(500).json({ error: "La IA no generó un mensaje. Intenta de nuevo." });
+    }
+
+    console.log(`[Preview] ✅ Mensaje generado para regla ${ruleId}`);
+    res.json({ success: true, message });
+
+  } catch (err) {
+    console.error("[Preview] ❌ Error llamando a Claude:", err.message);
+    res.status(500).json({ error: "Error conectando con la IA. Intenta de nuevo." });
+  }
+});
+
 // Health check
 app.get("/health", (req, res) => {
   res.json({

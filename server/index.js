@@ -463,28 +463,40 @@ app.get("/api/stores/:shop/rules", (req, res) => {
   res.json({ rules: store.rules });
 });
 
-// Activar/pausar una regla — actualiza en Supabase
+// Activar/pausar o editar una regla — actualiza en Supabase
 app.patch("/api/stores/:shop/rules/:ruleId", async (req, res) => {
   const { shop, ruleId } = req.params;
-  const { active } = req.body;
+  const { active, delay_days, channel, prompt } = req.body;
 
-  console.log(`[PATCH] shop=${shop} ruleId=${ruleId} active=${active} (tipo: ${typeof active})`);
+  console.log(`[PATCH] shop=${shop} ruleId=${ruleId} body:`, req.body);
 
-  if (active === undefined || active === null) {
-    console.error("[PATCH] ❌ Campo 'active' no recibido en body:", req.body);
-    return res.status(400).json({ error: "El campo 'active' es requerido" });
+  // Construir objeto de campos a actualizar (solo los que vengan en el body)
+  const updates = {};
+
+  if (active !== undefined && active !== null) {
+    updates.active = active === true || active === "true";
+  }
+  if (delay_days !== undefined) {
+    updates.delay_days = Number(delay_days);
+  }
+  if (channel !== undefined) {
+    updates.channel = channel;
+  }
+  if (prompt !== undefined) {
+    updates.prompt = prompt;
   }
 
-  // Forzar booleano — JSON.parse puede traer string "true"/"false"
-  const activeBoolean = active === true || active === "true";
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ error: "No se recibió ningún campo para actualizar" });
+  }
 
-  console.log(`[Supabase] Ejecutando UPDATE rules SET active=${activeBoolean} WHERE id='${ruleId}'`);
+  console.log(`[Supabase] UPDATE rules SET`, updates, `WHERE id='${ruleId}'`);
 
   const { data, error } = await supabase
     .from("rules")
-    .update({ active: activeBoolean })
+    .update(updates)
     .eq("id", ruleId)
-    .select("id, active")
+    .select("id, active, delay_days, channel, prompt")
     .single();
 
   if (error) {
@@ -497,12 +509,12 @@ app.patch("/api/stores/:shop/rules/:ruleId", async (req, res) => {
   }
 
   if (!data) {
-    console.error(`[Supabase] ❌ UPDATE no afectó ninguna fila. ¿ruleId '${ruleId}' existe en tabla rules?`);
+    console.error(`[Supabase] ❌ UPDATE no afectó ninguna fila. ¿ruleId '${ruleId}' existe?`);
     return res.status(404).json({ error: `Regla con id '${ruleId}' no encontrada en Supabase` });
   }
 
-  console.log(`[Supabase] ✅ Regla actualizada → id=${data.id} active=${data.active}`);
-  res.json({ rule: { id: data.id, active: data.active } });
+  console.log(`[Supabase] ✅ Regla actualizada →`, data);
+  res.json({ rule: data });
 });
 
 // Health check

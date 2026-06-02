@@ -328,67 +328,82 @@ function ShopifyConnect({ onBack, onDone }) {
 
 /* ─── STORE DETAIL ───────────────────────────────────────────────────────── */
 function StoreDetail({ store, onBack, onStoreUpdated }) {
-  // Inicializa reglas desde los datos reales que vienen de /api/stores
   const [rules, setRules] = useState(
     store.rules && store.rules.length > 0
       ? store.rules
       : [{ id: null, triggerLabel: "Pedido entregado", channel: "email", reviewPlatform: "Google", active: true }]
   );
-  const [saving, setSaving] = useState(null); // id de regla que se está guardando
+  const [saving, setSaving] = useState(null);
+  const [editing, setEditing] = useState(null); // { ruleId, delay_days, channel, prompt }
 
+  // ── Toggle activo/inactivo ─────────────────────────────────────────────────
   const toggleRule = async (rule) => {
-    if (!rule.id) {
-      console.warn("[ReviewPilot] toggleRule: rule.id es null, no se puede hacer PATCH");
-      return;
-    }
+    if (!rule.id) { console.warn("[ReviewPilot] rule.id es null"); return; }
     setSaving(rule.id);
     const newActive = !rule.active;
-
-    console.log(`[ReviewPilot] PATCH → ruleId=${rule.id} active=${newActive}`);
-
+    console.log(`[ReviewPilot] PATCH toggle → ruleId=${rule.id} active=${newActive}`);
     try {
       const res = await fetch(
         `https://reviewpilot-production-3183.up.railway.app/api/stores/${encodeURIComponent(store.domain)}/rules/${rule.id}`,
+        { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ active: newActive }) }
+      );
+      const text = await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+      const data = JSON.parse(text);
+      setRules(prev => prev.map(r => r.id === rule.id ? { ...r, active: data.rule.active } : r));
+      if (onStoreUpdated) onStoreUpdated();
+    } catch (err) {
+      console.error("[ReviewPilot] Error toggle:", err.message);
+      alert(`Error: ${err.message}`);
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  // ── Guardar edición ────────────────────────────────────────────────────────
+  const saveEdit = async () => {
+    if (!editing) return;
+    setSaving(editing.ruleId);
+    console.log(`[ReviewPilot] PATCH edit → ruleId=${editing.ruleId}`, editing);
+    try {
+      const res = await fetch(
+        `https://reviewpilot-production-3183.up.railway.app/api/stores/${encodeURIComponent(store.domain)}/rules/${editing.ruleId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ active: newActive }),
+          body: JSON.stringify({
+            delay_days: Number(editing.delay_days),
+            channel: editing.channel,
+            prompt: editing.prompt,
+          }),
         }
       );
-
       const text = await res.text();
-      console.log(`[ReviewPilot] Respuesta PATCH (${res.status}):`, text);
-
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
-
       const data = JSON.parse(text);
-
-      // Actualiza la regla en estado local con el valor confirmado por Supabase
-      setRules(prev =>
-        prev.map(r => r.id === rule.id ? { ...r, active: data.rule.active } : r)
-      );
-
-      // Refresca conteos del dashboard en background sin cerrar esta vista
+      setRules(prev => prev.map(r =>
+        r.id === editing.ruleId
+          ? { ...r, delay_days: data.rule.delay_days, channel: data.rule.channel, prompt: data.rule.prompt }
+          : r
+      ));
+      setEditing(null);
       if (onStoreUpdated) onStoreUpdated();
-
     } catch (err) {
-      console.error("[ReviewPilot] Error en PATCH:", err.message);
-      alert(`Error actualizando la regla: ${err.message}`);
+      console.error("[ReviewPilot] Error saveEdit:", err.message);
+      alert(`Error guardando: ${err.message}`);
     } finally {
       setSaving(null);
     }
   };
 
   const stepIcons = { "orders/fulfilled": "📦", email: "✉️", Email: "✉️", whatsapp: "💬", sms: "📱" };
+  const inp = { border: "1.5px solid #e5e7eb", borderRadius: 10, padding: "10px 14px", fontSize: 14, fontFamily: BODY, width: "100%", outline: "none" };
 
   return (
     <div style={{ minHeight: "100vh", background: "#fafafa", fontFamily: BODY }}>
       {/* Nav */}
       <div style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 40px", height: 60, display: "flex", alignItems: "center", gap: 16 }}>
-        <button
-          onClick={onBack}
-          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#888", padding: 0, lineHeight: 1 }}
-        >←</button>
+        <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#888", padding: 0 }}>←</button>
         <span style={{ fontSize: 20, fontFamily: FONT }}>ReviewPilot</span>
       </div>
 
@@ -396,9 +411,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
           <p style={{ fontSize: 13, color: "#aaa", marginBottom: 4 }}>Detalle de tienda</p>
-          <h1 style={{ fontSize: 26, fontFamily: FONT, fontWeight: 400, color: "#0a0a0a", wordBreak: "break-all" }}>
-            {store.domain}
-          </h1>
+          <h1 style={{ fontSize: 26, fontFamily: FONT, fontWeight: 400, color: "#0a0a0a", wordBreak: "break-all" }}>{store.domain}</h1>
         </div>
 
         {/* Meta card */}
@@ -417,90 +430,136 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
           </div>
         </div>
 
-        {/* Rules list */}
+        {/* Rules */}
         {rules.length === 0 && (
           <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, padding: "32px", textAlign: "center" }}>
-            <p style={{ fontSize: 14, color: "#aaa" }}>No hay reglas configuradas para esta tienda.</p>
+            <p style={{ fontSize: 14, color: "#aaa" }}>No hay reglas configuradas.</p>
           </div>
         )}
 
         {rules.map((rule) => {
           const isSaving = saving === rule.id;
+          const isEditing = editing?.ruleId === rule.id;
           const steps = [
             { icon: "📦", label: rule.triggerLabel || "Pedido entregado" },
-            { icon: "⏱️", label: "Esperar 7 días" },
+            { icon: "⏱️", label: `Esperar ${rule.delay_days ?? 7} días` },
             { icon: stepIcons[rule.channel] || "✉️", label: `Canal: ${rule.channel || "Email"}` },
           ];
 
           return (
             <div key={rule.id || "default"} style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", marginBottom: 16 }}>
+
               {/* Card header */}
               <div style={{ padding: "18px 26px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a" }}>Regla automática</div>
-                  <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>
-                    {rule.reviewPlatform || "Google"} · {rule.channel || "Email"}
-                  </div>
+                  <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>{rule.reviewPlatform || "Google"} · {rule.channel || "Email"}</div>
                 </div>
-                <span style={{
-                  fontSize: 12, fontWeight: 600, padding: "3px 12px", borderRadius: 99,
-                  background: rule.active ? "#dcfce7" : "#f3f4f6",
-                  color: rule.active ? "#166534" : "#888",
-                }}>
+                <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 12px", borderRadius: 99, background: rule.active ? "#dcfce7" : "#f3f4f6", color: rule.active ? "#166534" : "#888" }}>
                   {rule.active ? "Activa" : "Desactivada"}
                 </span>
               </div>
 
-              {/* Steps */}
-              <div style={{ padding: "22px 26px" }}>
-                {steps.map((step, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: i < steps.length - 1 ? 16 : 0 }}>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <div style={{
-                        width: 36, height: 36, borderRadius: "50%",
-                        background: rule.active ? "#f0fdf4" : "#f3f4f6",
-                        border: `1.5px solid ${rule.active ? "#bbf7d0" : "#e5e7eb"}`,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 16,
-                      }}>
-                        {step.icon}
+              {/* Steps (ocultos mientras se edita) */}
+              {!isEditing && (
+                <div style={{ padding: "22px 26px" }}>
+                  {steps.map((step, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: i < steps.length - 1 ? 16 : 0 }}>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: rule.active ? "#f0fdf4" : "#f3f4f6", border: `1.5px solid ${rule.active ? "#bbf7d0" : "#e5e7eb"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
+                          {step.icon}
+                        </div>
+                        {i < steps.length - 1 && <div style={{ width: 2, height: 20, background: "#f0f0f0", marginTop: 4 }} />}
                       </div>
-                      {i < steps.length - 1 && (
-                        <div style={{ width: 2, height: 20, background: "#f0f0f0", marginTop: 4 }} />
-                      )}
+                      <div style={{ paddingTop: 7 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: rule.active ? "#0a0a0a" : "#aaa" }}>
+                          {rule.active ? "✓ " : ""}{step.label}
+                        </span>
+                      </div>
                     </div>
-                    <div style={{ paddingTop: 7 }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: rule.active ? "#0a0a0a" : "#aaa" }}>
-                        {rule.active ? "✓ " : ""}{step.label}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
-              {/* Actions */}
-              <div style={{ padding: "16px 26px", borderTop: "1px solid #f3f4f6", display: "flex", gap: 10 }}>
-                <Btn variant="light" size="sm" onClick={() => alert("Editar regla — próximamente")}>
-                  ✏️ Editar
-                </Btn>
-                <Btn
-                  variant={rule.active ? "ghost" : "dark"}
-                  size="sm"
-                  disabled={isSaving || !rule.id}
-                  onClick={() => toggleRule(rule)}
-                >
-                  {isSaving ? "Guardando…" : rule.active ? "⏸ Desactivar" : "✓ Activar"}
-                </Btn>
-              </div>
+              {/* Formulario de edición */}
+              {isEditing && (
+                <div style={{ padding: "24px 26px", display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Disparador</label>
+                    <div style={{ ...inp, background: "#f9f9f9", color: "#aaa", cursor: "default" }}>📦 Pedido entregado (orders/fulfilled)</div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Días de espera</label>
+                    <input
+                      type="number" min={0} max={90}
+                      value={editing.delay_days}
+                      onChange={e => setEditing(prev => ({ ...prev, delay_days: e.target.value }))}
+                      style={inp}
+                      onFocus={e => e.target.style.borderColor = "#0a0a0a"}
+                      onBlur={e => e.target.style.borderColor = "#e5e7eb"}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Canal</label>
+                    <select
+                      value={editing.channel}
+                      onChange={e => setEditing(prev => ({ ...prev, channel: e.target.value }))}
+                      style={{ ...inp, background: "#fff" }}
+                    >
+                      <option value="email">Email</option>
+                      <option value="whatsapp">WhatsApp</option>
+                      <option value="sms">SMS</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Prompt (instrucción para la IA)</label>
+                    <textarea
+                      rows={4}
+                      value={editing.prompt}
+                      onChange={e => setEditing(prev => ({ ...prev, prompt: e.target.value }))}
+                      placeholder="Ej: Escribe un mensaje cálido y breve para pedirle una reseña al cliente..."
+                      style={{ ...inp, resize: "vertical", lineHeight: 1.6 }}
+                      onFocus={e => e.target.style.borderColor = "#0a0a0a"}
+                      onBlur={e => e.target.style.borderColor = "#e5e7eb"}
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
+                    <Btn size="sm" disabled={isSaving} onClick={saveEdit}>
+                      {isSaving ? "Guardando…" : "💾 Guardar"}
+                    </Btn>
+                    <Btn variant="light" size="sm" onClick={() => setEditing(null)}>Cancelar</Btn>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions (ocultos mientras se edita) */}
+              {!isEditing && (
+                <div style={{ padding: "16px 26px", borderTop: "1px solid #f3f4f6", display: "flex", gap: 10 }}>
+                  <Btn
+                    variant="light" size="sm" disabled={!rule.id}
+                    onClick={() => setEditing({ ruleId: rule.id, delay_days: rule.delay_days ?? 7, channel: rule.channel || "email", prompt: rule.prompt || "" })}
+                  >
+                    ✏️ Editar
+                  </Btn>
+                  <Btn
+                    variant={rule.active ? "ghost" : "dark"} size="sm"
+                    disabled={isSaving || !rule.id}
+                    onClick={() => toggleRule(rule)}
+                  >
+                    {isSaving ? "Guardando…" : rule.active ? "⏸ Desactivar" : "✓ Activar"}
+                  </Btn>
+                </div>
+              )}
             </div>
           );
         })}
 
-        {/* Source badge */}
         {store.source && (
-          <p style={{ fontSize: 12, color: "#bbb", textAlign: "right", marginTop: 8 }}>
-            Fuente: {store.source}
-          </p>
+          <p style={{ fontSize: 12, color: "#bbb", textAlign: "right", marginTop: 8 }}>Fuente: {store.source}</p>
         )}
       </div>
     </div>

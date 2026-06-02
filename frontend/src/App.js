@@ -446,7 +446,8 @@ function Dashboard({ onConnectMore }) {
 
 /* ─── ROOT ───────────────────────────────────────────────────────────────── */
 export default function App() {
-  const [view, setView] = useState("landing");
+  const isDashboard = window.location.pathname === "/dashboard";
+  const [view, setView] = useState(isDashboard ? "dashboard" : "landing");
 
   return (
     <>

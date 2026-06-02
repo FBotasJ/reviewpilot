@@ -480,8 +480,8 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
             {[
               ["Conectada", new Date(store.connectedAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })],
-              ["Total reglas", rules.length],
-              ["Reglas activas", rules.filter(r => r.active).length],
+              ["Total solicitudes", rules.length],
+              ["Solicitudes activas", rules.filter(r => r.active).length],
             ].map(([label, val]) => (
               <div key={label}>
                 <div style={{ fontSize: 11, color: "#aaa", fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 6 }}>{label}</div>
@@ -494,7 +494,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
         {/* Rules */}
         {rules.length === 0 && (
           <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, padding: "32px", textAlign: "center" }}>
-            <p style={{ fontSize: 14, color: "#aaa" }}>No hay reglas configuradas.</p>
+            <p style={{ fontSize: 14, color: "#aaa" }}>No hay solicitudes de reseña configuradas.</p>
           </div>
         )}
 
@@ -502,9 +502,9 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
           const isSaving = saving === rule.id;
           const isEditing = editing?.ruleId === rule.id;
           const steps = [
-            { icon: "📦", label: rule.triggerLabel || "Pedido entregado" },
-            { icon: "⏱️", label: `Esperar ${rule.delay_days ?? 7} días` },
-            { icon: stepIcons[rule.channel] || "✉️", label: `Canal: ${rule.channel || "Email"}` },
+            { icon: "📦", label: rule.triggerLabel ? rule.triggerLabel.replace("Pedido entregado", "Cuando se entrega un pedido") : "Cuando se entrega un pedido" },
+            { icon: "⏱️", label: `Enviar después de ${rule.delay_days ?? 7} días` },
+            { icon: stepIcons[rule.channel] || "✉️", label: `Enviar por ${rule.channel || "email"}` },
           ];
 
           return (
@@ -513,11 +513,11 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
               {/* Card header */}
               <div style={{ padding: "18px 26px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a" }}>Regla automática</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a" }}>Solicitud de reseña</div>
                   <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>{rule.reviewPlatform || "Google"} · {rule.channel || "Email"}</div>
                 </div>
                 <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 12px", borderRadius: 99, background: rule.active ? "#dcfce7" : "#f3f4f6", color: rule.active ? "#166534" : "#888" }}>
-                  {rule.active ? "Activa" : "Desactivada"}
+                  {rule.active ? "Solicitud activa" : "Solicitud desactivada"}
                 </span>
               </div>
 
@@ -547,7 +547,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
                 <div style={{ padding: "24px 26px", display: "flex", flexDirection: "column", gap: 16 }}>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Disparador</label>
-                    <div style={{ ...inp, background: "#f9f9f9", color: "#aaa", cursor: "default" }}>📦 Pedido entregado (orders/fulfilled)</div>
+                    <div style={{ ...inp, background: "#f9f9f9", color: "#aaa", cursor: "default" }}>📦 Cuando se entrega un pedido (orders/fulfilled)</div>
                   </div>
 
                   <div>
@@ -627,7 +627,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
               {!isEditing && confirming === rule.id && (
                 <div style={{ padding: "18px 26px", borderTop: "1px solid #fecaca", background: "#fef2f2" }}>
                   <p style={{ fontSize: 14, fontWeight: 600, color: "#b91c1c", marginBottom: 14 }}>
-                    ¿Seguro que deseas eliminar esta automatización?
+                    ¿Seguro que deseas eliminar esta solicitud de reseña?
                   </p>
                   <div style={{ display: "flex", gap: 10 }}>
                     <Btn
@@ -663,7 +663,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
             onMouseEnter={e => { e.currentTarget.style.borderColor = "#0a0a0a"; e.currentTarget.style.color = "#0a0a0a"; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#6b7280"; }}
           >
-            + Nueva automatización
+            + Crear solicitud
           </button>
         )}
 
@@ -672,11 +672,11 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
           <div style={{ background: "#fff", border: "1.5px solid #0a0a0a", borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", marginBottom: 16 }}>
             <div style={{ padding: "18px 26px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a" }}>Nueva automatización</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a" }}>Crear solicitud de reseña</div>
                 <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>Se activará automáticamente al crear</div>
               </div>
               <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 12px", borderRadius: 99, background: "#dcfce7", color: "#166534" }}>
-                Activa al crear
+                Activa al guardar
               </span>
             </div>
 
@@ -684,7 +684,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
               {/* Trigger — solo lectura */}
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Disparador</label>
-                <div style={{ ...inp, background: "#f9f9f9", color: "#aaa", cursor: "default" }}>📦 Pedido entregado (orders/fulfilled)</div>
+                <div style={{ ...inp, background: "#f9f9f9", color: "#aaa", cursor: "default" }}>📦 Cuando se entrega un pedido (orders/fulfilled)</div>
               </div>
 
               {/* Días de espera */}
@@ -731,7 +731,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
               {/* Botones */}
               <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
                 <Btn size="sm" disabled={creating_saving} onClick={createRule}>
-                  {creating_saving ? "Creando…" : "✓ Crear automatización"}
+                  {creating_saving ? "Creando…" : "✓ Guardar solicitud"}
                 </Btn>
                 <Btn variant="light" size="sm" onClick={() => setCreating(false)}>Cancelar</Btn>
               </div>
@@ -811,7 +811,7 @@ function Dashboard({ onConnectMore }) {
 
       <div style={{ maxWidth: 760, margin: "48px auto", padding: "0 24px" }}>
         <h1 style={{ fontSize: 30, fontFamily: FONT, fontWeight: 400, marginBottom: 6 }}>Dashboard</h1>
-        <p style={{ fontSize: 14, color: "#888", marginBottom: 32 }}>Tiendas conectadas — clic en una para ver el detalle</p>
+        <p style={{ fontSize: 14, color: "#888", marginBottom: 32 }}>Tiendas conectadas — selecciona una para administrar sus solicitudes de reseña</p>
 
         {/* Loading */}
         {loading && (
@@ -885,7 +885,7 @@ function Dashboard({ onConnectMore }) {
                     background: isActive ? "#dcfce7" : "#f3f4f6",
                     color: isActive ? "#166534" : "#888",
                   }}>
-                    {isActive ? "Activo" : "Sin reglas"}
+                    {isActive ? "Activo" : "Sin solicitudes"}
                   </span>
                 </div>
               );

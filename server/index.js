@@ -437,6 +437,7 @@ app.get("/api/stores", async (req, res) => {
       return {
         domain: store.shop_domain,
         connectedAt: store.connected_at,
+        googleReviewUrl: store.google_review_url || "",
         rulesCount: rules.length,
         activeRules: rules.filter(r => r.active).length,
         // Incluimos las reglas completas para que el frontend pueda usar sus IDs
@@ -463,6 +464,33 @@ app.get("/api/stores/:shop/rules", (req, res) => {
   const store = stores.get(req.params.shop);
   if (!store) return res.status(404).json({ error: "Tienda no encontrada" });
   res.json({ rules: store.rules });
+});
+
+// Actualizar datos de una tienda (google_review_url, etc.)
+app.patch("/api/stores/:shop", async (req, res) => {
+  const { shop } = req.params;
+  const { google_review_url } = req.body;
+
+  console.log(`[PATCH Store] ${shop} → google_review_url: ${google_review_url}`);
+
+  if (google_review_url === undefined) {
+    return res.status(400).json({ error: "No se recibió ningún campo para actualizar" });
+  }
+
+  const { data, error } = await supabase
+    .from("stores")
+    .update({ google_review_url: google_review_url || null })
+    .eq("shop_domain", shop)
+    .select("shop_domain, google_review_url")
+    .single();
+
+  if (error) {
+    console.error(`[Supabase] ❌ Error actualizando tienda ${shop}:`, error.message);
+    return res.status(500).json({ error: "Error actualizando tienda en Supabase", detail: error.message });
+  }
+
+  console.log(`[Supabase] ✅ Tienda actualizada → google_review_url: ${data.google_review_url}`);
+  res.json({ success: true, google_review_url: data.google_review_url });
 });
 
 // Crear nueva regla para una tienda — inserta en Supabase
@@ -696,7 +724,7 @@ app.post("/api/rules/:ruleId/send-test", async (req, res) => {
   // 1. Buscar la regla en Supabase
   const { data: rule, error: ruleError } = await supabase
     .from("rules")
-    .select("id, trigger, trigger_label, review_platform, channel, delay_days, prompt")
+    .select("id, store_id, trigger, trigger_label, review_platform, channel, delay_days, prompt")
     .eq("id", ruleId)
     .single();
 
@@ -704,6 +732,27 @@ app.post("/api/rules/:ruleId/send-test", async (req, res) => {
     console.error(`[SendTest] ❌ Regla no encontrada: ${ruleId}`, ruleError?.message);
     return res.status(404).json({ error: `Regla '${ruleId}' no encontrada` });
   }
+
+  // 1b. Buscar la tienda para obtener google_review_url
+  const { data: storeData, error: storeError } = await supabase
+    .from("stores")
+    .select("shop_domain, google_review_url")
+    .eq("id", rule.store_id)
+    .single();
+
+  if (storeError || !storeData) {
+    console.error(`[SendTest] ❌ Tienda no encontrada para store_id: ${rule.store_id}`);
+    return res.status(404).json({ error: "Tienda asociada no encontrada" });
+  }
+
+  if (!storeData.google_review_url || !storeData.google_review_url.trim()) {
+    console.warn(`[SendTest] ⚠️ google_review_url vacío para ${storeData.shop_domain}`);
+    return res.status(400).json({
+      error: "Configura primero el enlace de Google Reviews en la vista de detalle de tu tienda.",
+    });
+  }
+
+  const googleReviewUrl = storeData.google_review_url.trim();
 
   // 2. Datos ficticios del cliente
   const demo = {
@@ -792,7 +841,7 @@ app.post("/api/rules/:ruleId/send-test", async (req, res) => {
     <div class="header"><h1>${demo.store}</h1></div>
     <div class="body">
       <p class="message">${message.replace(/\n/g, "<br>")}</p>
-      <a href="#" class="cta">⭐ Dejar mi reseña en ${demo.platform}</a>
+      <a href="${googleReviewUrl}" class="cta">⭐ Dejar mi reseña en ${demo.platform}</a>
     </div>
     <div class="footer">
       Cliente de prueba: ${demo.name} · Canal: ${demo.channel}<br>

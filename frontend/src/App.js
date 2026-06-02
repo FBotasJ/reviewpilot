@@ -339,8 +339,11 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
   const [newRule, setNewRule] = useState({ delay_days: 7, channel: "email", prompt: "" });
   const [creating_saving, setCreatingSaving] = useState(false);
   const [confirming, setConfirming] = useState(null);
-  const [previews, setPreviews] = useState({}); // { ruleId: { loading, message, error } }
-  const [sendTests, setSendTests] = useState({}); // { ruleId: { loading, sent, error } }
+  const [previews, setPreviews] = useState({});
+  const [sendTests, setSendTests] = useState({});
+  const [googleUrl, setGoogleUrl] = useState(store.googleReviewUrl || "");
+  const [googleUrlSaving, setGoogleUrlSaving] = useState(false);
+  const [googleUrlSaved, setGoogleUrlSaved] = useState(false);
 
   // ── Toggle activo/inactivo ─────────────────────────────────────────────────
   const toggleRule = async (rule) => {
@@ -498,6 +501,33 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
     }
   };
 
+  // ── Guardar enlace de Google Reviews ──────────────────────────────────────
+  const saveGoogleUrl = async () => {
+    setGoogleUrlSaving(true);
+    setGoogleUrlSaved(false);
+    console.log(`[ReviewPilot] PATCH store google_review_url → ${googleUrl}`);
+    try {
+      const res = await fetch(
+        `https://reviewpilot-production-3183.up.railway.app/api/stores/${encodeURIComponent(store.domain)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ google_review_url: googleUrl }),
+        }
+      );
+      const text = await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+      setGoogleUrlSaved(true);
+      if (onStoreUpdated) onStoreUpdated();
+      setTimeout(() => setGoogleUrlSaved(false), 4000);
+    } catch (err) {
+      console.error("[ReviewPilot] Error guardando google_review_url:", err.message);
+      alert(`Error guardando el enlace: ${err.message}`);
+    } finally {
+      setGoogleUrlSaving(false);
+    }
+  };
+
   const stepIcons = { "orders/fulfilled": "📦", email: "✉️", Email: "✉️", whatsapp: "💬", sms: "📱" };
   const inp = { border: "1.5px solid #e5e7eb", borderRadius: 10, padding: "10px 14px", fontSize: 14, fontFamily: BODY, width: "100%", outline: "none" };
 
@@ -529,6 +559,55 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
                 <div style={{ fontSize: 18, fontWeight: 700, color: "#0a0a0a", fontFamily: FONT }}>{val}</div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Enlace de Google Reviews */}
+        <div style={{ background: "#fff", border: `1px solid ${googleUrl ? "#ececec" : "#fde68a"}`, borderRadius: 16, padding: "22px 26px", marginBottom: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a" }}>🔗 Enlace de Google Reviews</div>
+              <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>Se usará en los correos de solicitud de reseña</div>
+            </div>
+            {googleUrl && (
+              <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: 99, background: "#dcfce7", color: "#166534" }}>
+                Configurado
+              </span>
+            )}
+          </div>
+
+          {/* Aviso si no hay enlace */}
+          {!googleUrl && (
+            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: "#92400e" }}>
+              ⚠️ Agrega tu enlace de Google Reviews para poder enviar solicitudes reales.
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <input
+              type="url"
+              value={googleUrl}
+              onChange={e => { setGoogleUrl(e.target.value); setGoogleUrlSaved(false); }}
+              placeholder="https://g.page/r/tu-enlace-de-google-reviews"
+              style={{ ...inp, flex: 1 }}
+              onFocus={e => e.target.style.borderColor = "#0a0a0a"}
+              onBlur={e => e.target.style.borderColor = "#e5e7eb"}
+            />
+            <button
+              onClick={saveGoogleUrl}
+              disabled={googleUrlSaving}
+              style={{
+                background: googleUrlSaved ? "#16a34a" : "#0a0a0a",
+                color: "#fff", border: "none", borderRadius: 10,
+                padding: "10px 18px", fontSize: 13, fontWeight: 600,
+                cursor: googleUrlSaving ? "default" : "pointer",
+                fontFamily: BODY, whiteSpace: "nowrap",
+                transition: "background 0.2s",
+                opacity: googleUrlSaving ? 0.7 : 1,
+              }}
+            >
+              {googleUrlSaving ? "Guardando…" : googleUrlSaved ? "✓ Enlace guardado" : "Guardar enlace"}
+            </button>
           </div>
         </div>
 

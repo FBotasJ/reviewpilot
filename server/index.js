@@ -614,31 +614,42 @@ app.post("/api/rules/:ruleId/preview", async (req, res) => {
     return res.status(404).json({ error: `Regla '${ruleId}' no encontrada` });
   }
 
-  // 2. Datos ficticios del cliente para la vista previa
-  const demoCustomer = {
+  // 2. Datos ficticios del cliente
+  const demo = {
     name: "Carlos",
-    product: "pedido reciente",
     store: "ReviewPilot Demo",
+    platform: rule.review_platform || "Google",
+    channel: rule.channel || "email",
+    delay: rule.delay_days ?? 7,
   };
 
-  // 3. Construir el prompt para Claude
-  const systemPrompt = rule.prompt && rule.prompt.trim()
-    ? rule.prompt
-    : `Escribe un mensaje corto y natural (máximo 3 oraciones) para pedirle una reseña a un cliente. El mensaje debe ser cálido, breve y terminar con una llamada a la acción.`;
+  // 3. Instrucción principal — el prompt del usuario tiene prioridad total
+  const DEFAULT_PROMPT =
+    "Escribe un mensaje breve, cálido y natural para pedirle una reseña al cliente. " +
+    "Máximo 3 oraciones. Termina con una llamada a la acción clara.";
 
-  const userContent = `${systemPrompt}
+  const userPrompt = rule.prompt && rule.prompt.trim()
+    ? rule.prompt.trim()
+    : DEFAULT_PROMPT;
 
-Datos del cliente:
-- Nombre: ${demoCustomer.name}
-- Producto: ${demoCustomer.product}
-- Tienda: ${demoCustomer.store}
-- Plataforma de reseña: ${rule.review_platform || "Google"}
-- Canal de envío: ${rule.channel || "email"}
-- Días después del evento: ${rule.delay_days ?? 7}
+  // 4. System: impone las instrucciones del usuario como ley
+  //    User: solo provee el contexto del cliente
+  const systemInstruction =
+    `Eres un asistente que redacta mensajes de solicitud de reseña para negocios. ` +
+    `DEBES seguir estrictamente las siguientes instrucciones del dueño del negocio:\n\n` +
+    `---\n${userPrompt}\n---\n\n` +
+    `Responde ÚNICAMENTE con el mensaje final. Sin comillas, sin explicaciones, sin prefijos.`;
 
-Solo devuelve el mensaje final, sin comillas ni explicaciones adicionales.`;
+  const userContext =
+    `Escribe el mensaje usando estos datos:\n` +
+    `- Cliente: ${demo.name}\n` +
+    `- Tienda: ${demo.store}\n` +
+    `- Plataforma de reseña: ${demo.platform}\n` +
+    `- Canal de envío: ${demo.channel}\n` +
+    `- Días desde el pedido: ${demo.delay}`;
 
-  console.log(`[Preview] Llamando a Claude para regla ${ruleId}...`);
+  console.log(`[Preview] Prompt usado:\n${userPrompt}`);
+  console.log(`[Preview] System instruction:\n${systemInstruction}`);
 
   try {
     const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
@@ -650,21 +661,23 @@ Solo devuelve el mensaje final, sin comillas ni explicaciones adicionales.`;
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
-        max_tokens: 300,
-        messages: [{ role: "user", content: userContent }],
+        max_tokens: 400,
+        system: systemInstruction,
+        messages: [{ role: "user", content: userContext }],
       }),
     });
 
     const aiData = await aiRes.json();
-    console.log(`[Preview] Claude response status: ${aiRes.status}`, JSON.stringify(aiData).slice(0, 200));
-    const message = aiData.content?.[0]?.text;
+    console.log(`[Preview] Claude status: ${aiRes.status} — response: ${JSON.stringify(aiData).slice(0, 300)}`);
+
+    const message = aiData.content?.[0]?.text?.trim();
 
     if (!message) {
-      console.error("[Preview] Claude no devolvió texto:", aiData);
+      console.error("[Preview] Claude no devolvió texto:", JSON.stringify(aiData));
       return res.status(500).json({ error: "La IA no generó un mensaje. Intenta de nuevo." });
     }
 
-    console.log(`[Preview] ✅ Mensaje generado para regla ${ruleId}`);
+    console.log(`[Preview] ✅ Mensaje generado:\n${message}`);
     res.json({ success: true, message });
 
   } catch (err) {

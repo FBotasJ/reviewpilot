@@ -885,6 +885,196 @@ app.post("/api/rules/:ruleId/send-test", async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ENDPOINT DE PRUEBA — simula un pedido entregado sin depender de Shopify
+// POST /api/test/orders-fulfilled
+// ─────────────────────────────────────────────────────────────────────────────
+app.post("/api/test/orders-fulfilled", async (req, res) => {
+  const TEST_SHOP    = "reviewpilot-test.myshopify.com";
+  const TEST_NAME    = "Carlos";
+  const TEST_EMAIL   = "fbotasjacob@gmail.com";
+  const TEST_PRODUCT = "pedido de prueba";
+
+  console.log(`[TestWebhook] Simulando orders/fulfilled para ${TEST_SHOP}`);
+
+  // 1. Buscar la tienda en Supabase
+  const { data: storeData, error: storeError } = await supabase
+    .from("stores")
+    .select("id, shop_domain, google_review_url")
+    .eq("shop_domain", TEST_SHOP)
+    .single();
+
+  if (storeError || !storeData) {
+    console.error("[TestWebhook] ❌ Tienda no encontrada:", storeError?.message);
+    return res.status(404).json({ error: `Tienda '${TEST_SHOP}' no encontrada en Supabase` });
+  }
+
+  if (!storeData.google_review_url || !storeData.google_review_url.trim()) {
+    return res.status(400).json({
+      error: "Configura primero el enlace de Google Reviews en la vista de detalle de tu tienda."
+    });
+  }
+
+  console.log(`[TestWebhook] ✅ Tienda encontrada → id=${storeData.id}`);
+
+  // 2. Buscar solicitudes activas de esa tienda
+  const { data: rules, error: rulesError } = await supabase
+    .from("rules")
+    .select("id, trigger, trigger_label, review_platform, channel, delay_days, prompt")
+    .eq("store_id", storeData.id)
+    .eq("active", true);
+
+  if (rulesError) {
+    console.error("[TestWebhook] ❌ Error buscando reglas:", rulesError.message);
+    return res.status(500).json({ error: "Error buscando solicitudes activas" });
+  }
+
+  if (!rules || rules.length === 0) {
+    return res.status(400).json({
+      error: "No hay solicitudes activas para esta tienda. Crea y activa al menos una."
+    });
+  }
+
+  console.log(`[TestWebhook] ✅ Solicitudes activas encontradas: ${rules.length}`);
+
+  const DEFAULT_PROMPT =
+    "Escribe un mensaje breve, cálido y natural para pedirle una reseña al cliente. " +
+    "Máximo 3 oraciones. Termina con una llamada a la acción clara.";
+
+  const results = [];
+
+  // 3. Por cada solicitud activa: generar mensaje y enviar email
+  for (const rule of rules) {
+    const userPrompt = rule.prompt?.trim() || DEFAULT_PROMPT;
+    const platform   = rule.review_platform || "Google";
+    const channel    = rule.channel || "email";
+
+    const systemInstruction =
+      `Eres un asistente que redacta mensajes de solicitud de reseña para negocios. ` +
+      `DEBES seguir estrictamente las siguientes instrucciones del dueño del negocio:\n\n` +
+      `---\n${userPrompt}\n---\n\n` +
+      `Responde ÚNICAMENTE con el mensaje final. Sin comillas, sin explicaciones, sin prefijos.`;
+
+    const userContext =
+      `Escribe el mensaje usando estos datos:\n` +
+      `- Cliente: ${TEST_NAME}\n` +
+      `- Producto: ${TEST_PRODUCT}\n` +
+      `- Tienda: ${TEST_SHOP.replace(".myshopify.com", "")}\n` +
+      `- Plataforma de reseña: ${platform}\n` +
+      `- Canal de envío: ${channel}\n` +
+      `- Días desde el pedido: ${rule.delay_days ?? 7}`;
+
+    console.log(`[TestWebhook] Generando mensaje con Claude para regla ${rule.id}...`);
+
+    let message;
+    try {
+      const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": process.env.ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-5",
+          max_tokens: 400,
+          system: systemInstruction,
+          messages: [{ role: "user", content: userContext }],
+        }),
+      });
+
+      const aiData = await aiRes.json();
+      message = aiData.content?.[0]?.text?.trim();
+
+      if (!message) {
+        console.error(`[TestWebhook] Claude no generó texto para regla ${rule.id}:`, JSON.stringify(aiData));
+        results.push({ ruleId: rule.id, success: false, error: "Claude no generó texto" });
+        continue;
+      }
+
+      console.log(`[TestWebhook] ✅ Mensaje generado:\n${message}`);
+    } catch (err) {
+      console.error(`[TestWebhook] ❌ Error Claude para regla ${rule.id}:`, err.message);
+      results.push({ ruleId: rule.id, success: false, error: err.message });
+      continue;
+    }
+
+    // 4. Enviar email con Resend
+    const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 0; }
+    .container { max-width: 520px; margin: 40px auto; background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #ececec; }
+    .header { background: #0a0a0a; padding: 32px; text-align: center; }
+    .header h1 { color: #fff; font-size: 22px; font-weight: 400; margin: 0; }
+    .body { padding: 36px 40px; }
+    .message { font-size: 16px; color: #333; line-height: 1.75; margin-bottom: 32px; }
+    .cta { display: block; background: #0a0a0a; color: #fff; text-decoration: none; text-align: center; padding: 16px 32px; border-radius: 10px; font-size: 15px; font-weight: 600; }
+    .footer { text-align: center; padding: 24px; font-size: 12px; color: #bbb; border-top: 1px solid #f0f0f0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header"><h1>${TEST_SHOP.replace(".myshopify.com", "")}</h1></div>
+    <div class="body">
+      <p class="message">${message.replace(/\n/g, "<br>")}</p>
+      <a href="${storeData.google_review_url}" class="cta">⭐ Dejar mi reseña en ${platform}</a>
+    </div>
+    <div class="footer">
+      Enviado a ${TEST_NAME} · ${TEST_EMAIL}<br>
+      Powered by <strong>ReviewPilot</strong>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    try {
+      const emailRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: process.env.EMAIL_FROM,
+          to: [TEST_EMAIL],
+          subject: `¿Qué te pareció tu ${TEST_PRODUCT}? ⭐`,
+          html: htmlBody,
+        }),
+      });
+
+      const emailData = await emailRes.json();
+
+      if (!emailRes.ok || !emailData.id) {
+        console.error(`[TestWebhook] ❌ Error Resend para regla ${rule.id}:`, JSON.stringify(emailData));
+        results.push({ ruleId: rule.id, success: false, error: emailData?.message || "Error Resend" });
+      } else {
+        console.log(`[TestWebhook] ✅ Email enviado → id=${emailData.id} a ${TEST_EMAIL}`);
+        results.push({ ruleId: rule.id, success: true, emailId: emailData.id, message });
+      }
+    } catch (err) {
+      console.error(`[TestWebhook] ❌ Error enviando email para regla ${rule.id}:`, err.message);
+      results.push({ ruleId: rule.id, success: false, error: err.message });
+    }
+  }
+
+  const emailsSent = results.filter(r => r.success).length;
+  console.log(`[TestWebhook] ✅ Completado — ${emailsSent}/${rules.length} emails enviados`);
+
+  res.json({
+    success: emailsSent > 0,
+    emailsSent,
+    total: rules.length,
+    message: emailsSent > 0
+      ? `${emailsSent} email(s) enviados correctamente a ${TEST_EMAIL}`
+      : "No se pudo enviar ningún email. Revisa los logs de Railway.",
+    results,
+  });
+});
+
 // Health check
 app.get("/health", (req, res) => {
   res.json({

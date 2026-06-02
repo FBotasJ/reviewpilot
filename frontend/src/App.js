@@ -471,7 +471,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
       <div style={{ maxWidth: 640, margin: "48px auto", padding: "0 24px" }}>
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
-          <p style={{ fontSize: 13, color: "#aaa", marginBottom: 4 }}>Detalle de tienda</p>
+          <p style={{ fontSize: 13, color: "#aaa", marginBottom: 4 }}>Solicitudes de reseña</p>
           <h1 style={{ fontSize: 26, fontFamily: FONT, fontWeight: 400, color: "#0a0a0a", wordBreak: "break-all" }}>{store.domain}</h1>
         </div>
 
@@ -810,8 +810,8 @@ function Dashboard({ onConnectMore }) {
       </div>
 
       <div style={{ maxWidth: 760, margin: "48px auto", padding: "0 24px" }}>
-        <h1 style={{ fontSize: 30, fontFamily: FONT, fontWeight: 400, marginBottom: 6 }}>Dashboard</h1>
-        <p style={{ fontSize: 14, color: "#888", marginBottom: 32 }}>Tiendas conectadas — selecciona una para administrar sus solicitudes de reseña</p>
+        <h1 style={{ fontSize: 30, fontFamily: FONT, fontWeight: 400, marginBottom: 6 }}>Panel de reseñas</h1>
+        <p style={{ fontSize: 14, color: "#888", marginBottom: 32 }}>Tus tiendas — selecciona una para administrar sus solicitudes de reseña</p>
 
         {/* Loading */}
         {loading && (
@@ -842,7 +842,7 @@ function Dashboard({ onConnectMore }) {
           <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
             {/* Header */}
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", padding: "12px 22px", borderBottom: "1px solid #f3f4f6", background: "#f9f9f9" }}>
-              {["Tienda", "Conectada", "Reglas", "Activas", "Estado"].map(h => (
+              {["Tienda", "Conectada", "Solicitudes", "Activas", "Estado"].map(h => (
                 <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "#aaa", letterSpacing: 0.5, textTransform: "uppercase" }}>{h}</span>
               ))}
             </div>
@@ -885,7 +885,7 @@ function Dashboard({ onConnectMore }) {
                     background: isActive ? "#dcfce7" : "#f3f4f6",
                     color: isActive ? "#166534" : "#888",
                   }}>
-                    {isActive ? "Activo" : "Sin solicitudes"}
+                    {isActive ? "Activo" : "Sin solicitudes activas"}
                   </span>
                 </div>
               );

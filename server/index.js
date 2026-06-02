@@ -468,25 +468,40 @@ app.patch("/api/stores/:shop/rules/:ruleId", async (req, res) => {
   const { shop, ruleId } = req.params;
   const { active } = req.body;
 
-  if (active === undefined) {
+  console.log(`[PATCH] shop=${shop} ruleId=${ruleId} active=${active} (tipo: ${typeof active})`);
+
+  if (active === undefined || active === null) {
+    console.error("[PATCH] ❌ Campo 'active' no recibido en body:", req.body);
     return res.status(400).json({ error: "El campo 'active' es requerido" });
   }
 
-  console.log(`[Supabase] PATCH regla ${ruleId} para ${shop} → active: ${active}`);
+  // Forzar booleano — JSON.parse puede traer string "true"/"false"
+  const activeBoolean = active === true || active === "true";
+
+  console.log(`[Supabase] Ejecutando UPDATE rules SET active=${activeBoolean} WHERE id='${ruleId}'`);
 
   const { data, error } = await supabase
     .from("rules")
-    .update({ active })
+    .update({ active: activeBoolean })
     .eq("id", ruleId)
-    .select()
+    .select("id, active")
     .single();
 
   if (error) {
-    console.error(`[Supabase] ❌ Error actualizando regla ${ruleId}:`, error.message);
-    return res.status(500).json({ error: "Error actualizando regla en Supabase", detail: error.message });
+    console.error(`[Supabase] ❌ Error actualizando regla ${ruleId}:`, error.message, error.details, error.hint);
+    return res.status(500).json({
+      error: "Error actualizando regla en Supabase",
+      detail: error.message,
+      hint: error.hint,
+    });
   }
 
-  console.log(`[Supabase] ✅ Regla ${ruleId} actualizada → active: ${data.active}`);
+  if (!data) {
+    console.error(`[Supabase] ❌ UPDATE no afectó ninguna fila. ¿ruleId '${ruleId}' existe en tabla rules?`);
+    return res.status(404).json({ error: `Regla con id '${ruleId}' no encontrada en Supabase` });
+  }
+
+  console.log(`[Supabase] ✅ Regla actualizada → id=${data.id} active=${data.active}`);
   res.json({ rule: { id: data.id, active: data.active } });
 });
 

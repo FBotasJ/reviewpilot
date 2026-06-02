@@ -337,8 +337,14 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
   const [saving, setSaving] = useState(null); // id de regla que se está guardando
 
   const toggleRule = async (rule) => {
-    if (!rule.id) return; // sin id real no podemos hacer PATCH
+    if (!rule.id) {
+      console.warn("[ReviewPilot] toggleRule: rule.id es null, no se puede hacer PATCH");
+      return;
+    }
     setSaving(rule.id);
+    const newActive = !rule.active;
+
+    console.log(`[ReviewPilot] PATCH → ruleId=${rule.id} active=${newActive}`);
 
     try {
       const res = await fetch(
@@ -346,21 +352,28 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ active: !rule.active }),
+          body: JSON.stringify({ active: newActive }),
         }
       );
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const text = await res.text();
+      console.log(`[ReviewPilot] Respuesta PATCH (${res.status}):`, text);
 
-      // Actualiza el estado local
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+
+      const data = JSON.parse(text);
+
+      // Actualiza la regla en estado local con el valor confirmado por Supabase
       setRules(prev =>
         prev.map(r => r.id === rule.id ? { ...r, active: data.rule.active } : r)
       );
-      // Notifica al dashboard para que refresque los conteos
+
+      // Refresca conteos del dashboard en background sin cerrar esta vista
       if (onStoreUpdated) onStoreUpdated();
+
     } catch (err) {
-      alert("Error actualizando la regla. Intenta de nuevo.");
+      console.error("[ReviewPilot] Error en PATCH:", err.message);
+      alert(`Error actualizando la regla: ${err.message}`);
     } finally {
       setSaving(null);
     }
@@ -524,8 +537,7 @@ function Dashboard({ onConnectMore }) {
         store={selected}
         onBack={() => setSelected(null)}
         onStoreUpdated={() => {
-          fetchStores();
-          setSelected(null); // vuelve al dashboard con datos frescos
+          fetchStores(); // refresca conteos en background, no cierra el detalle
         }}
       />
     );

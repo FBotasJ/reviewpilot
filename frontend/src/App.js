@@ -340,6 +340,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
   const [creating_saving, setCreatingSaving] = useState(false);
   const [confirming, setConfirming] = useState(null);
   const [previews, setPreviews] = useState({}); // { ruleId: { loading, message, error } }
+  const [sendTests, setSendTests] = useState({}); // { ruleId: { loading, sent, error } }
 
   // ── Toggle activo/inactivo ─────────────────────────────────────────────────
   const toggleRule = async (rule) => {
@@ -477,6 +478,26 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
     }
   };
 
+  // ── Enviar correo de prueba ────────────────────────────────────────────────
+  const sendTest = async (ruleId) => {
+    setSendTests(prev => ({ ...prev, [ruleId]: { loading: true, sent: false, error: null } }));
+    console.log(`[ReviewPilot] POST send-test → ruleId=${ruleId}`);
+    try {
+      const res = await fetch(
+        `https://reviewpilot-production-3183.up.railway.app/api/rules/${ruleId}/send-test`,
+        { method: "POST", headers: { "Content-Type": "application/json" } }
+      );
+      const text = await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+      setSendTests(prev => ({ ...prev, [ruleId]: { loading: false, sent: true, error: null } }));
+      // Reset "enviado" después de 5 segundos
+      setTimeout(() => setSendTests(prev => ({ ...prev, [ruleId]: { loading: false, sent: false, error: null } })), 5000);
+    } catch (err) {
+      console.error("[ReviewPilot] Error send-test:", err.message);
+      setSendTests(prev => ({ ...prev, [ruleId]: { loading: false, sent: false, error: "No se pudo enviar el correo. Intenta de nuevo." } }));
+    }
+  };
+
   const stepIcons = { "orders/fulfilled": "📦", email: "✉️", Email: "✉️", whatsapp: "💬", sms: "📱" };
   const inp = { border: "1.5px solid #e5e7eb", borderRadius: 10, padding: "10px 14px", fontSize: 14, fontFamily: BODY, width: "100%", outline: "none" };
 
@@ -562,31 +583,70 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
                 </div>
               )}
 
-              {/* Vista previa con IA */}
+              {/* Vista previa con IA + Enviar prueba */}
               {!isEditing && rule.id && (() => {
                 const p = previews[rule.id];
+                const t = sendTests[rule.id];
                 return (
                   <div style={{ padding: "0 26px 20px" }}>
-                    {/* Botón */}
+                    {/* Botones lado a lado */}
                     {(!p || (!p.loading && !p.message && !p.error)) && (
-                      <button
-                        onClick={() => generatePreview(rule.id)}
-                        style={{
-                          background: "none", border: "1.5px solid #e5e7eb",
-                          borderRadius: 10, padding: "8px 16px",
-                          fontSize: 13, fontWeight: 600, cursor: "pointer",
-                          color: "#555", fontFamily: BODY,
-                          display: "flex", alignItems: "center", gap: 6,
-                          transition: "all 0.15s",
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = "#0a0a0a"; e.currentTarget.style.color = "#0a0a0a"; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#555"; }}
-                      >
-                        🤖 Vista previa con IA
-                      </button>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button
+                          onClick={() => generatePreview(rule.id)}
+                          style={{
+                            background: "none", border: "1.5px solid #e5e7eb",
+                            borderRadius: 10, padding: "8px 16px",
+                            fontSize: 13, fontWeight: 600, cursor: "pointer",
+                            color: "#555", fontFamily: BODY,
+                            display: "flex", alignItems: "center", gap: 6,
+                            transition: "all 0.15s",
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = "#0a0a0a"; e.currentTarget.style.color = "#0a0a0a"; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#555"; }}
+                        >
+                          🤖 Vista previa con IA
+                        </button>
+
+                        <button
+                          onClick={() => sendTest(rule.id)}
+                          disabled={t?.loading}
+                          style={{
+                            background: "none", border: "1.5px solid #e5e7eb",
+                            borderRadius: 10, padding: "8px 16px",
+                            fontSize: 13, fontWeight: 600,
+                            cursor: t?.loading ? "default" : "pointer",
+                            color: t?.sent ? "#16a34a" : "#555",
+                            borderColor: t?.sent ? "#bbf7d0" : "#e5e7eb",
+                            fontFamily: BODY,
+                            display: "flex", alignItems: "center", gap: 6,
+                            transition: "all 0.15s",
+                            opacity: t?.loading ? 0.6 : 1,
+                          }}
+                          onMouseEnter={e => { if (!t?.loading && !t?.sent) { e.currentTarget.style.borderColor = "#0a0a0a"; e.currentTarget.style.color = "#0a0a0a"; }}}
+                          onMouseLeave={e => { if (!t?.loading && !t?.sent) { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#555"; }}}
+                        >
+                          {t?.loading ? (
+                            <>
+                              <div style={{ width: 12, height: 12, border: "2px solid #e5e7eb", borderTopColor: "#555", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                              Enviando…
+                            </>
+                          ) : t?.sent ? "✓ Correo enviado" : "✉️ Enviar prueba"}
+                        </button>
+                      </div>
                     )}
 
-                    {/* Cargando */}
+                    {/* Error de envío */}
+                    {t?.error && !p?.message && (
+                      <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 14px", marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 13, color: "#b91c1c", fontFamily: BODY }}>⚠️ {t.error}</span>
+                        <button onClick={() => sendTest(rule.id)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#b91c1c", fontFamily: BODY, padding: 0, fontWeight: 600 }}>
+                          Reintentar
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Cargando preview */}
                     {p?.loading && (
                       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0" }}>
                         <div style={{ width: 16, height: 16, border: "2px solid #e5e7eb", borderTopColor: "#0a0a0a", borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
@@ -601,23 +661,32 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
                           <span style={{ fontSize: 11, fontWeight: 700, color: "#aaa", letterSpacing: 0.5, textTransform: "uppercase" }}>
                             🤖 Ejemplo generado con IA
                           </span>
-                          <button
-                            onClick={() => generatePreview(rule.id)}
-                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#888", fontFamily: BODY, padding: 0 }}
-                          >
-                            ↻ Regenerar
-                          </button>
+                          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                            <button
+                              onClick={() => sendTest(rule.id)}
+                              disabled={t?.loading}
+                              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: t?.sent ? "#16a34a" : "#555", fontFamily: BODY, padding: 0, fontWeight: 600 }}
+                            >
+                              {t?.loading ? "Enviando…" : t?.sent ? "✓ Enviado" : "✉️ Enviar prueba"}
+                            </button>
+                            <button
+                              onClick={() => generatePreview(rule.id)}
+                              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#888", fontFamily: BODY, padding: 0 }}
+                            >
+                              ↻ Regenerar
+                            </button>
+                          </div>
                         </div>
                         <p style={{ fontSize: 14, color: "#333", lineHeight: 1.7, margin: 0, fontFamily: BODY }}>
                           {p.message}
                         </p>
-                        <p style={{ fontSize: 11, color: "#bbb", marginTop: 10, margin: "10px 0 0" }}>
+                        <p style={{ fontSize: 11, color: "#bbb", margin: "10px 0 0" }}>
                           Cliente de ejemplo: Carlos · Tienda: ReviewPilot Demo
                         </p>
                       </div>
                     )}
 
-                    {/* Error */}
+                    {/* Error preview */}
                     {p?.error && (
                       <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: 13, color: "#b91c1c", fontFamily: BODY }}>⚠️ {p.error}</span>

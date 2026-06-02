@@ -686,6 +686,156 @@ app.post("/api/rules/:ruleId/preview", async (req, res) => {
   }
 });
 
+// Enviar correo de prueba — genera mensaje con IA y lo envía con Resend
+app.post("/api/rules/:ruleId/send-test", async (req, res) => {
+  const { ruleId } = req.params;
+  const TEST_EMAIL = "fbotasjacob@gmail.com";
+
+  console.log(`[SendTest] Iniciando envío de prueba para regla ${ruleId} → ${TEST_EMAIL}`);
+
+  // 1. Buscar la regla en Supabase
+  const { data: rule, error: ruleError } = await supabase
+    .from("rules")
+    .select("id, trigger, trigger_label, review_platform, channel, delay_days, prompt")
+    .eq("id", ruleId)
+    .single();
+
+  if (ruleError || !rule) {
+    console.error(`[SendTest] ❌ Regla no encontrada: ${ruleId}`, ruleError?.message);
+    return res.status(404).json({ error: `Regla '${ruleId}' no encontrada` });
+  }
+
+  // 2. Datos ficticios del cliente
+  const demo = {
+    name: "Carlos",
+    store: "ReviewPilot Demo",
+    platform: rule.review_platform || "Google",
+    channel: rule.channel || "email",
+    delay: rule.delay_days ?? 7,
+  };
+
+  // 3. Generar mensaje con Claude (misma lógica que /preview)
+  const DEFAULT_PROMPT =
+    "Escribe un mensaje breve, cálido y natural para pedirle una reseña al cliente. " +
+    "Máximo 3 oraciones. Termina con una llamada a la acción clara.";
+
+  const userPrompt = rule.prompt && rule.prompt.trim() ? rule.prompt.trim() : DEFAULT_PROMPT;
+
+  const systemInstruction =
+    `Eres un asistente que redacta mensajes de solicitud de reseña para negocios. ` +
+    `DEBES seguir estrictamente las siguientes instrucciones del dueño del negocio:\n\n` +
+    `---\n${userPrompt}\n---\n\n` +
+    `Responde ÚNICAMENTE con el mensaje final. Sin comillas, sin explicaciones, sin prefijos.`;
+
+  const userContext =
+    `Escribe el mensaje usando estos datos:\n` +
+    `- Cliente: ${demo.name}\n` +
+    `- Tienda: ${demo.store}\n` +
+    `- Plataforma de reseña: ${demo.platform}\n` +
+    `- Canal de envío: ${demo.channel}\n` +
+    `- Días desde el pedido: ${demo.delay}`;
+
+  console.log(`[SendTest] Generando mensaje con Claude...`);
+
+  let message;
+  try {
+    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5",
+        max_tokens: 400,
+        system: systemInstruction,
+        messages: [{ role: "user", content: userContext }],
+      }),
+    });
+
+    const aiData = await aiRes.json();
+    message = aiData.content?.[0]?.text?.trim();
+
+    if (!message) {
+      console.error("[SendTest] Claude no devolvió texto:", JSON.stringify(aiData));
+      return res.status(500).json({ error: "La IA no pudo generar el mensaje. Intenta de nuevo." });
+    }
+
+    console.log(`[SendTest] Mensaje generado:\n${message}`);
+  } catch (err) {
+    console.error("[SendTest] ❌ Error llamando a Claude:", err.message);
+    return res.status(500).json({ error: "Error conectando con la IA." });
+  }
+
+  // 4. Enviar email con Resend
+  const htmlBody = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f9f9f9; margin: 0; padding: 0; }
+    .container { max-width: 520px; margin: 40px auto; background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #ececec; }
+    .badge { background: #fef3c7; color: #92400e; text-align: center; padding: 8px; font-size: 12px; font-weight: 600; }
+    .header { background: #0a0a0a; padding: 32px; text-align: center; }
+    .header h1 { color: #fff; font-size: 22px; font-weight: 400; margin: 0; }
+    .body { padding: 36px 40px; }
+    .message { font-size: 16px; color: #333; line-height: 1.75; margin-bottom: 32px; }
+    .cta { display: block; background: #0a0a0a; color: #fff; text-decoration: none; text-align: center; padding: 16px 32px; border-radius: 10px; font-size: 15px; font-weight: 600; }
+    .footer { text-align: center; padding: 24px; font-size: 12px; color: #bbb; border-top: 1px solid #f0f0f0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge">⚠️ Este es un correo de prueba generado por ReviewPilot</div>
+    <div class="header"><h1>${demo.store}</h1></div>
+    <div class="body">
+      <p class="message">${message.replace(/\n/g, "<br>")}</p>
+      <a href="#" class="cta">⭐ Dejar mi reseña en ${demo.platform}</a>
+    </div>
+    <div class="footer">
+      Cliente de prueba: ${demo.name} · Canal: ${demo.channel}<br>
+      Powered by <strong>ReviewPilot</strong>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  try {
+    const emailRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: process.env.EMAIL_FROM,
+        to: [TEST_EMAIL],
+        subject: "Vista previa de solicitud de reseña",
+        html: htmlBody,
+      }),
+    });
+
+    const emailData = await emailRes.json();
+
+    if (!emailRes.ok || !emailData.id) {
+      console.error("[SendTest] ❌ Error Resend:", JSON.stringify(emailData));
+      return res.status(500).json({
+        error: "Error enviando el correo.",
+        detail: emailData?.message || JSON.stringify(emailData),
+      });
+    }
+
+    console.log(`[SendTest] ✅ Correo enviado → id=${emailData.id} a ${TEST_EMAIL}`);
+    res.json({ success: true, message: "Correo de prueba enviado", emailId: emailData.id });
+
+  } catch (err) {
+    console.error("[SendTest] ❌ Error enviando con Resend:", err.message);
+    res.status(500).json({ error: "Error enviando el correo. Intenta de nuevo." });
+  }
+});
+
 // Health check
 app.get("/health", (req, res) => {
   res.json({

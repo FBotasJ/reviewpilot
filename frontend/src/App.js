@@ -596,7 +596,19 @@ function Dashboard({ onConnectMore }) {
         store={selected}
         onBack={() => setSelected(null)}
         onStoreUpdated={() => {
-          fetchStores(); // refresca conteos en background, no cierra el detalle
+          // Refresca la lista completa desde la API
+          setLoading(true);
+          fetch("https://reviewpilot-production-3183.up.railway.app/api/stores")
+            .then(r => r.json())
+            .then(data => {
+              const fresh = data.stores || [];
+              setStores(fresh);
+              // Actualiza también el objeto selected para que StoreDetail vea los datos nuevos
+              const refreshed = fresh.find(s => s.domain === selected.domain);
+              if (refreshed) setSelected(refreshed);
+              setLoading(false);
+            })
+            .catch(() => setLoading(false));
         }}
       />
     );

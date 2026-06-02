@@ -335,6 +335,9 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
   );
   const [saving, setSaving] = useState(null);
   const [editing, setEditing] = useState(null); // { ruleId, delay_days, channel, prompt }
+  const [creating, setCreating] = useState(false); // formulario de nueva regla
+  const [newRule, setNewRule] = useState({ delay_days: 7, channel: "email", prompt: "" });
+  const [creating_saving, setCreatingSaving] = useState(false);
 
   // ── Toggle activo/inactivo ─────────────────────────────────────────────────
   const toggleRule = async (rule) => {
@@ -393,6 +396,40 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
       alert(`Error guardando: ${err.message}`);
     } finally {
       setSaving(null);
+    }
+  };
+
+  // ── Crear nueva regla ──────────────────────────────────────────────────────
+  const createRule = async () => {
+    setCreatingSaving(true);
+    console.log(`[ReviewPilot] POST nueva regla para ${store.domain}:`, newRule);
+    try {
+      const res = await fetch(
+        `https://reviewpilot-production-3183.up.railway.app/api/stores/${encodeURIComponent(store.domain)}/rules`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            delay_days: Number(newRule.delay_days),
+            channel: newRule.channel,
+            prompt: newRule.prompt,
+          }),
+        }
+      );
+      const text = await res.text();
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+      const data = JSON.parse(text);
+      // Agrega la nueva regla al estado local
+      setRules(prev => [...prev, data.rule]);
+      setCreating(false);
+      setNewRule({ delay_days: 7, channel: "email", prompt: "" });
+      // Refresca el dashboard
+      if (onStoreUpdated) onStoreUpdated();
+    } catch (err) {
+      console.error("[ReviewPilot] Error createRule:", err.message);
+      alert(`Error creando la regla: ${err.message}`);
+    } finally {
+      setCreatingSaving(false);
     }
   };
 
@@ -557,6 +594,97 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
             </div>
           );
         })}
+
+        {/* Botón nueva automatización */}
+        {!creating && (
+          <button
+            onClick={() => { setCreating(true); setNewRule({ delay_days: 7, channel: "email", prompt: "" }); }}
+            style={{
+              width: "100%", padding: "14px", borderRadius: 14,
+              border: "1.5px dashed #d1d5db", background: "transparent",
+              cursor: "pointer", fontSize: 14, fontWeight: 600,
+              color: "#6b7280", fontFamily: BODY,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              marginBottom: 16, transition: "all 0.15s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "#0a0a0a"; e.currentTarget.style.color = "#0a0a0a"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#6b7280"; }}
+          >
+            + Nueva automatización
+          </button>
+        )}
+
+        {/* Formulario de nueva automatización */}
+        {creating && (
+          <div style={{ background: "#fff", border: "1.5px solid #0a0a0a", borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", marginBottom: 16 }}>
+            <div style={{ padding: "18px 26px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a" }}>Nueva automatización</div>
+                <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>Se activará automáticamente al crear</div>
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 12px", borderRadius: 99, background: "#dcfce7", color: "#166534" }}>
+                Activa al crear
+              </span>
+            </div>
+
+            <div style={{ padding: "24px 26px", display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* Trigger — solo lectura */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Disparador</label>
+                <div style={{ ...inp, background: "#f9f9f9", color: "#aaa", cursor: "default" }}>📦 Pedido entregado (orders/fulfilled)</div>
+              </div>
+
+              {/* Días de espera */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Días de espera</label>
+                <input
+                  type="number" min={0} max={90}
+                  value={newRule.delay_days}
+                  onChange={e => setNewRule(prev => ({ ...prev, delay_days: e.target.value }))}
+                  style={inp}
+                  onFocus={e => e.target.style.borderColor = "#0a0a0a"}
+                  onBlur={e => e.target.style.borderColor = "#e5e7eb"}
+                />
+              </div>
+
+              {/* Canal */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Canal</label>
+                <select
+                  value={newRule.channel}
+                  onChange={e => setNewRule(prev => ({ ...prev, channel: e.target.value }))}
+                  style={{ ...inp, background: "#fff" }}
+                >
+                  <option value="email">Email</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="sms">SMS</option>
+                </select>
+              </div>
+
+              {/* Prompt */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Prompt (instrucción para la IA)</label>
+                <textarea
+                  rows={4}
+                  value={newRule.prompt}
+                  onChange={e => setNewRule(prev => ({ ...prev, prompt: e.target.value }))}
+                  placeholder="Ej: Escribe un mensaje cálido y breve para pedirle una reseña al cliente..."
+                  style={{ ...inp, resize: "vertical", lineHeight: 1.6 }}
+                  onFocus={e => e.target.style.borderColor = "#0a0a0a"}
+                  onBlur={e => e.target.style.borderColor = "#e5e7eb"}
+                />
+              </div>
+
+              {/* Botones */}
+              <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
+                <Btn size="sm" disabled={creating_saving} onClick={createRule}>
+                  {creating_saving ? "Creando…" : "✓ Crear automatización"}
+                </Btn>
+                <Btn variant="light" size="sm" onClick={() => setCreating(false)}>Cancelar</Btn>
+              </div>
+            </div>
+          </div>
+        )}
 
         {store.source && (
           <p style={{ fontSize: 12, color: "#bbb", textAlign: "right", marginTop: 8 }}>Fuente: {store.source}</p>

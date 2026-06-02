@@ -465,7 +465,64 @@ app.get("/api/stores/:shop/rules", (req, res) => {
   res.json({ rules: store.rules });
 });
 
-// Activar/pausar o editar una regla — actualiza en Supabase
+// Crear nueva regla para una tienda — inserta en Supabase
+app.post("/api/stores/:shop/rules", async (req, res) => {
+  const { shop } = req.params;
+  const { delay_days, channel, prompt } = req.body;
+
+  console.log(`[POST] Nueva regla para ${shop}:`, req.body);
+
+  // 1. Buscar la tienda en Supabase para obtener su id
+  const { data: storeData, error: storeError } = await supabase
+    .from("stores")
+    .select("id")
+    .eq("shop_domain", shop)
+    .single();
+
+  if (storeError || !storeData) {
+    console.error(`[Supabase] ❌ Tienda no encontrada: ${shop}`, storeError?.message);
+    return res.status(404).json({ error: `Tienda '${shop}' no encontrada en Supabase` });
+  }
+
+  console.log(`[Supabase] ✅ Tienda encontrada → id=${storeData.id}`);
+
+  // 2. Insertar la nueva regla
+  const { data, error } = await supabase
+    .from("rules")
+    .insert({
+      store_id: storeData.id,
+      trigger: "orders/fulfilled",
+      trigger_label: "Pedido entregado",
+      review_platform: "Google",
+      channel: channel || "email",
+      delay_days: delay_days !== undefined ? Number(delay_days) : 7,
+      prompt: prompt || "",
+      active: true,
+    })
+    .select("id, trigger, trigger_label, review_platform, channel, delay_days, prompt, active")
+    .single();
+
+  if (error) {
+    console.error(`[Supabase] ❌ Error creando regla para ${shop}:`, error.message, error.hint);
+    return res.status(500).json({ error: "Error creando regla en Supabase", detail: error.message });
+  }
+
+  console.log(`[Supabase] ✅ Regla creada → id=${data.id}`);
+  res.status(201).json({
+    rule: {
+      id: data.id,
+      trigger: data.trigger,
+      triggerLabel: data.trigger_label,
+      reviewPlatform: data.review_platform,
+      channel: data.channel,
+      delay_days: data.delay_days,
+      prompt: data.prompt,
+      active: data.active,
+    }
+  });
+});
+
+
 app.patch("/api/stores/:shop/rules/:ruleId", async (req, res) => {
   const { shop, ruleId } = req.params;
   const { active, delay_days, channel, prompt } = req.body;

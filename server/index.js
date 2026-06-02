@@ -649,13 +649,14 @@ Solo devuelve el mensaje final, sin comillas ni explicaciones adicionales.`;
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-5",
         max_tokens: 300,
         messages: [{ role: "user", content: userContent }],
       }),
     });
 
     const aiData = await aiRes.json();
+    console.log(`[Preview] Claude response status: ${aiRes.status}`, JSON.stringify(aiData).slice(0, 200));
     const message = aiData.content?.[0]?.text;
 
     if (!message) {

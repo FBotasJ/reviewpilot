@@ -326,13 +326,131 @@ function ShopifyConnect({ onBack, onDone }) {
   );
 }
 
+/* ─── STORE DETAIL ───────────────────────────────────────────────────────── */
+function StoreDetail({ store, onBack }) {
+  const [desactivado, setDesactivado] = useState(false);
+
+  const steps = [
+    { icon: "📦", label: "Pedido entregado" },
+    { icon: "⏱️", label: "Esperar 7 días" },
+    { icon: "✉️", label: "Canal: Email" },
+  ];
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#fafafa", fontFamily: BODY }}>
+      {/* Nav */}
+      <div style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 40px", height: 60, display: "flex", alignItems: "center", gap: 16 }}>
+        <button
+          onClick={onBack}
+          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#888", padding: 0, lineHeight: 1 }}
+        >←</button>
+        <span style={{ fontSize: 20, fontFamily: FONT }}>ReviewPilot</span>
+      </div>
+
+      <div style={{ maxWidth: 640, margin: "48px auto", padding: "0 24px" }}>
+        {/* Header */}
+        <div style={{ marginBottom: 32 }}>
+          <p style={{ fontSize: 13, color: "#aaa", marginBottom: 4 }}>Detalle de tienda</p>
+          <h1 style={{ fontSize: 26, fontFamily: FONT, fontWeight: 400, color: "#0a0a0a", wordBreak: "break-all" }}>
+            {store.domain}
+          </h1>
+        </div>
+
+        {/* Meta card */}
+        <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, padding: "22px 26px", marginBottom: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+            {[
+              ["Conectada", new Date(store.connectedAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })],
+              ["Total reglas", store.rulesCount],
+              ["Reglas activas", store.activeRules],
+            ].map(([label, val]) => (
+              <div key={label}>
+                <div style={{ fontSize: 11, color: "#aaa", fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 6 }}>{label}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#0a0a0a", fontFamily: FONT }}>{val}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Rule card */}
+        <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", marginBottom: 20 }}>
+          {/* Card header */}
+          <div style={{ padding: "18px 26px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a" }}>Regla activa</div>
+              <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>Solicitud de reseña automática</div>
+            </div>
+            <span style={{
+              fontSize: 12, fontWeight: 600, padding: "3px 12px", borderRadius: 99,
+              background: desactivado ? "#f3f4f6" : "#dcfce7",
+              color: desactivado ? "#888" : "#166534",
+            }}>
+              {desactivado ? "Desactivada" : "Activa"}
+            </span>
+          </div>
+
+          {/* Steps */}
+          <div style={{ padding: "22px 26px" }}>
+            {steps.map((step, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: i < steps.length - 1 ? 16 : 0 }}>
+                {/* Icon + line */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: "50%",
+                    background: desactivado ? "#f3f4f6" : "#f0fdf4",
+                    border: `1.5px solid ${desactivado ? "#e5e7eb" : "#bbf7d0"}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 16,
+                  }}>
+                    {step.icon}
+                  </div>
+                  {i < steps.length - 1 && (
+                    <div style={{ width: 2, height: 20, background: "#f0f0f0", marginTop: 4 }} />
+                  )}
+                </div>
+                {/* Label */}
+                <div style={{ paddingTop: 7 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: desactivado ? "#aaa" : "#0a0a0a" }}>
+                    {desactivado ? "" : "✓ "}{step.label}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div style={{ padding: "16px 26px", borderTop: "1px solid #f3f4f6", display: "flex", gap: 10 }}>
+            <Btn variant="light" size="sm" onClick={() => alert("Editar regla — próximamente")}>
+              ✏️ Editar
+            </Btn>
+            <Btn
+              variant={desactivado ? "dark" : "ghost"}
+              size="sm"
+              onClick={() => setDesactivado(d => !d)}
+            >
+              {desactivado ? "✓ Activar" : "⏸ Desactivar"}
+            </Btn>
+          </div>
+        </div>
+
+        {/* Source badge */}
+        {store.source && (
+          <p style={{ fontSize: 12, color: "#bbb", textAlign: "right" }}>
+            Fuente: {store.source}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─── DASHBOARD ──────────────────────────────────────────────────────────── */
 function Dashboard({ onConnectMore }) {
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selected, setSelected] = useState(null); // tienda seleccionada para detalle
 
-  // Fetch stores from Railway API on mount
   useEffect(() => {
     fetch("https://reviewpilot-production-3183.up.railway.app/api/stores")
       .then(r => r.json())
@@ -340,11 +458,16 @@ function Dashboard({ onConnectMore }) {
         setStores(data.stores || []);
         setLoading(false);
       })
-      .catch(err => {
+      .catch(() => {
         setError("No se pudo conectar con el servidor.");
         setLoading(false);
       });
   }, []);
+
+  // Si hay tienda seleccionada, mostrar detalle
+  if (selected) {
+    return <StoreDetail store={selected} onBack={() => setSelected(null)} />;
+  }
 
   const fmt = (iso) => {
     if (!iso) return "—";
@@ -362,7 +485,7 @@ function Dashboard({ onConnectMore }) {
 
       <div style={{ maxWidth: 760, margin: "48px auto", padding: "0 24px" }}>
         <h1 style={{ fontSize: 30, fontFamily: FONT, fontWeight: 400, marginBottom: 6 }}>Dashboard</h1>
-        <p style={{ fontSize: 14, color: "#888", marginBottom: 32 }}>Tiendas conectadas y estado de automatizaciones</p>
+        <p style={{ fontSize: 14, color: "#888", marginBottom: 32 }}>Tiendas conectadas — clic en una para ver el detalle</p>
 
         {/* Loading */}
         {loading && (
@@ -374,7 +497,7 @@ function Dashboard({ onConnectMore }) {
 
         {/* Error */}
         {!loading && error && (
-          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 12, padding: "16px 20px", fontSize: 14, color: "#b91c1c", marginBottom: 24 }}>
+          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 12, padding: "16px 20px", fontSize: 14, color: "#b91c1c" }}>
             ❌ {error}
           </div>
         )}
@@ -392,27 +515,32 @@ function Dashboard({ onConnectMore }) {
         {!loading && !error && stores.length > 0 && (
           <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
             {/* Header */}
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", gap: 0, padding: "12px 22px", borderBottom: "1px solid #f3f4f6", background: "#f9f9f9" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", padding: "12px 22px", borderBottom: "1px solid #f3f4f6", background: "#f9f9f9" }}>
               {["Tienda", "Conectada", "Reglas", "Activas", "Estado"].map(h => (
                 <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "#aaa", letterSpacing: 0.5, textTransform: "uppercase" }}>{h}</span>
               ))}
             </div>
 
-            {/* Rows */}
+            {/* Rows — clickeables */}
             {stores.map((store, i) => {
               const isActive = store.activeRules > 0;
               return (
-                <div key={store.domain} style={{
-                  display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr",
-                  padding: "16px 22px", alignItems: "center",
-                  borderBottom: i < stores.length - 1 ? "1px solid #f3f4f6" : "none",
-                }}>
+                <div
+                  key={store.domain}
+                  onClick={() => setSelected(store)}
+                  style={{
+                    display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr",
+                    padding: "16px 22px", alignItems: "center",
+                    borderBottom: i < stores.length - 1 ? "1px solid #f3f4f6" : "none",
+                    cursor: "pointer", transition: "background 0.12s",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f9f9f9"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                >
                   {/* Tienda */}
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: isActive ? "#22c55e" : "#e5e7eb", flexShrink: 0 }} />
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: "#0a0a0a" }}>{store.domain}</div>
-                    </div>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#0a0a0a" }}>{store.domain}</span>
                   </div>
 
                   {/* Conectada */}
@@ -426,8 +554,7 @@ function Dashboard({ onConnectMore }) {
 
                   {/* Estado */}
                   <span style={{
-                    display: "inline-block",
-                    fontSize: 12, fontWeight: 600,
+                    display: "inline-block", fontSize: 12, fontWeight: 600,
                     padding: "3px 10px", borderRadius: 99,
                     background: isActive ? "#dcfce7" : "#f3f4f6",
                     color: isActive ? "#166534" : "#888",

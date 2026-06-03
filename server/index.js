@@ -127,17 +127,22 @@ app.get("/auth/shopify/callback", async (req, res) => {
     });
 
     // ── Persistimos en Supabase ───────────────────────────────────────────────
-    // upsert: inserta si no existe, actualiza access_token si ya existe
+    // Obtener user_id del header de autenticación si existe
+    const userId = await getUserIdFromHeader(req);
+    if (userId) {
+      console.log(`[OAuth] Vinculando tienda ${shop} al usuario ${userId}`);
+    }
+
+    const upsertPayload = {
+      shop_domain: shop,
+      access_token: access_token,
+      connected_at: new Date().toISOString(),
+    };
+    if (userId) upsertPayload.user_id = userId;
+
     const { error: dbError } = await supabase
       .from("stores")
-      .upsert(
-        {
-          shop_domain: shop,
-          access_token: access_token,
-          connected_at: new Date().toISOString(),
-        },
-        { onConflict: "shop_domain" }
-      );
+      .upsert(upsertPayload, { onConflict: "shop_domain" });
 
     if (dbError) {
       console.error(`[Supabase] ❌ Error guardando tienda ${shop}:`, dbError.message);
@@ -383,15 +388,40 @@ async function sendReviewEmail({ to, customerName, message, reviewPlatform, shop
 // 8. ENDPOINTS DE LA API
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Ver tiendas conectadas — lee exclusivamente desde Supabase
-// Incluye reglas asociadas desde la tabla rules
+// Helper: verifica el JWT de Supabase y devuelve el user_id
+// Acepta token desde Authorization header O desde query param ?token=
+async function getUserIdFromHeader(req) {
+  let token = null;
+  const authHeader = req.headers["authorization"];
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.slice(7);
+  } else if (req.query?.token) {
+    token = req.query.token;
+  }
+  if (!token) return null;
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data?.user) return null;
+  return data.user.id;
+}
+
+// Ver tiendas conectadas — filtradas por user_id del usuario autenticado
 app.get("/api/stores", async (req, res) => {
   console.log("[Supabase] GET /api/stores — consultando tabla stores...");
 
-  // 1. Leer todas las tiendas
+  // Verificar autenticación
+  const userId = await getUserIdFromHeader(req);
+  if (!userId) {
+    console.warn("[Auth] ❌ Token inválido o ausente en /api/stores");
+    return res.status(401).json({ error: "No autorizado. Inicia sesión para continuar." });
+  }
+
+  console.log(`[Auth] ✅ Usuario autenticado: ${userId}`);
+
+  // 1. Leer solo las tiendas de este usuario
   const { data: storesData, error: storesError } = await supabase
     .from("stores")
     .select("*")
+    .eq("user_id", userId)
     .order("connected_at", { ascending: false });
 
   if (storesError) {
@@ -417,16 +447,12 @@ app.get("/api/stores", async (req, res) => {
       if (rulesError) {
         console.error(
           `[Supabase] ❌ Error leyendo reglas para ${store.shop_domain}:`,
-          rulesError.message,
-          rulesError.details,
-          rulesError.hint
+          rulesError.message, rulesError.details, rulesError.hint
         );
-        // Si falla la lectura de reglas, devolvemos la tienda con conteo 0
         return {
           domain: store.shop_domain,
           connectedAt: store.connected_at,
-          rulesCount: 0,
-          activeRules: 0,
+          rulesCount: 0, activeRules: 0,
           rulesError: rulesError.message,
         };
       }
@@ -440,7 +466,6 @@ app.get("/api/stores", async (req, res) => {
         googleReviewUrl: store.google_review_url || "",
         rulesCount: rules.length,
         activeRules: rules.filter(r => r.active).length,
-        // Incluimos las reglas completas para que el frontend pueda usar sus IDs
         rules: rules.map(r => ({
           id: r.id,
           trigger: r.trigger || "orders/fulfilled",

@@ -1,8 +1,26 @@
 import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+// ── Supabase client (frontend) ────────────────────────────────────────────────
+const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || "";
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Helper: fetch con Authorization header del usuario actual
+async function authFetch(url, opts = {}) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  return fetch(url, {
+    ...opts,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(opts.headers || {}),
+    },
+  });
+}
 
 // Lee la URL del servidor desde variable de entorno
-// En desarrollo: http://localhost:3001
-// En producción (Railway): https://tu-app.railway.app
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
 
 const FONT = "'Instrument Serif', serif";
@@ -219,7 +237,7 @@ function LandingPage({ onGetStarted, onPrivacy, onTerms }) {
 }
 
 /* ─── SHOPIFY CONNECT ─────────────────────────────────────────────────────── */
-function ShopifyConnect({ onBack, onDone }) {
+function ShopifyConnect({ onBack, onDone, session }) {
   const [shopInput, setShopInput] = useState("");
   const [step, setStep] = useState("form"); // form | connecting | done
   const [log, setLog] = useState([]);
@@ -252,8 +270,11 @@ function ShopifyConnect({ onBack, onDone }) {
     addLog("¡Tienda conectada y lista! 🎉", "done");
     setStep("done");
 
-    // En producción esto sería:
-    // window.location.href = `${API_URL}/auth/shopify?shop=${domain}`;
+    // Redirigir al OAuth real de Shopify con token de sesión en header
+    // El backend guardará user_id en la tienda al completar el OAuth
+    const token = session?.access_token;
+    const oauthUrl = `https://reviewpilot-production-3183.up.railway.app/auth/shopify?shop=${domain}${token ? `&token=${token}` : ""}`;
+    window.location.href = oauthUrl;
   };
 
   if (step === "done") {
@@ -1001,7 +1022,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
 }
 
 /* ─── DASHBOARD ──────────────────────────────────────────────────────────── */
-function Dashboard({ onConnectMore }) {
+function Dashboard({ onConnectMore, onLogout, userEmail }) {
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1009,9 +1030,13 @@ function Dashboard({ onConnectMore }) {
 
   const fetchStores = () => {
     setLoading(true);
-    fetch("https://reviewpilot-production-3183.up.railway.app/api/stores")
-      .then(r => r.json())
+    authFetch("https://reviewpilot-production-3183.up.railway.app/api/stores")
+      .then(r => {
+        if (r.status === 401) { if (onLogout) onLogout(); return null; }
+        return r.json();
+      })
       .then(data => {
+        if (!data) return;
         setStores(data.stores || []);
         setLoading(false);
       })
@@ -1030,14 +1055,12 @@ function Dashboard({ onConnectMore }) {
         store={selected}
         onBack={() => setSelected(null)}
         onStoreUpdated={() => {
-          // Refresca la lista completa desde la API
           setLoading(true);
-          fetch("https://reviewpilot-production-3183.up.railway.app/api/stores")
+          authFetch("https://reviewpilot-production-3183.up.railway.app/api/stores")
             .then(r => r.json())
             .then(data => {
               const fresh = data.stores || [];
               setStores(fresh);
-              // Actualiza también el objeto selected para que StoreDetail vea los datos nuevos
               const refreshed = fresh.find(s => s.domain === selected.domain);
               if (refreshed) setSelected(refreshed);
               setLoading(false);
@@ -1059,7 +1082,18 @@ function Dashboard({ onConnectMore }) {
     <div style={{ minHeight: "100vh", background: "#fafafa", fontFamily: BODY }}>
       <div style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 40px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 20, fontFamily: FONT }}>ReviewPilot</span>
-        <Btn onClick={onConnectMore} size="sm">+ Conectar tienda</Btn>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          {userEmail && <span style={{ fontSize: 13, color: "#aaa" }}>{userEmail}</span>}
+          <Btn onClick={onConnectMore} size="sm">+ Conectar tienda</Btn>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              style={{ fontSize: 13, color: "#888", background: "none", border: "none", cursor: "pointer", fontFamily: BODY, padding: 0 }}
+              onMouseEnter={e => e.target.style.color = "#0a0a0a"}
+              onMouseLeave={e => e.target.style.color = "#888"}
+            >Cerrar sesión</button>
+          )}
+        </div>
       </div>
 
       <div style={{ maxWidth: 760, margin: "48px auto", padding: "0 24px" }}>
@@ -1150,6 +1184,143 @@ function Dashboard({ onConnectMore }) {
   );
 }
 
+
+
+/* ─── AUTH — LOGIN & REGISTER ───────────────────────────────────────────── */
+function AuthPage({ onAuth }) {
+  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [focused, setFocused] = useState(null);
+
+  const inp = {
+    width: "100%", border: "1.5px solid #e5e7eb", borderRadius: 10,
+    padding: "12px 14px", fontSize: 14, fontFamily: BODY, outline: "none",
+    transition: "border-color 0.15s",
+  };
+
+  const handleSubmit = async () => {
+    setError(null);
+    setSuccess(null);
+    if (!email || !password) { setError("Completa todos los campos."); return; }
+    if (password.length < 6) { setError("La contraseña debe tener al menos 6 caracteres."); return; }
+    setLoading(true);
+    try {
+      if (mode === "login") {
+        const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
+        if (err) throw err;
+        onAuth(data.session);
+      } else {
+        const { error: err } = await supabase.auth.signUp({ email, password });
+        if (err) throw err;
+        setSuccess("Cuenta creada. Revisa tu email para confirmar tu cuenta y luego inicia sesión.");
+        setMode("login");
+      }
+    } catch (err) {
+      const msg = err.message || "Error desconocido";
+      setError(
+        msg.includes("Invalid login") ? "Email o contraseña incorrectos." :
+        msg.includes("already registered") ? "Este email ya está registrado. Inicia sesión." :
+        msg
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: BODY }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
+      <div style={{ width: "100%", maxWidth: 440 }}>
+        {/* Logo */}
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <span style={{ fontSize: 26, fontFamily: FONT, color: "#0a0a0a" }}>ReviewPilot</span>
+          <p style={{ fontSize: 13, color: "#aaa", marginTop: 6 }}>
+            {mode === "login" ? "Inicia sesión para acceder a tu panel" : "Crea tu cuenta gratuita"}
+          </p>
+        </div>
+
+        {/* Card */}
+        <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 20, padding: "36px 40px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+          {/* Tabs */}
+          <div style={{ display: "flex", gap: 0, marginBottom: 28, background: "#f3f4f6", borderRadius: 10, padding: 4 }}>
+            {[["login", "Iniciar sesión"], ["register", "Crear cuenta"]].map(([m, label]) => (
+              <button key={m} onClick={() => { setMode(m); setError(null); setSuccess(null); }}
+                style={{
+                  flex: 1, padding: "8px 0", borderRadius: 8, border: "none",
+                  background: mode === m ? "#fff" : "transparent",
+                  color: mode === m ? "#0a0a0a" : "#888",
+                  fontWeight: mode === m ? 700 : 400,
+                  fontSize: 13, cursor: "pointer", fontFamily: BODY,
+                  boxShadow: mode === m ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                  transition: "all 0.15s",
+                }}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Fields */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Email</label>
+              <input
+                type="email" value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="tu@email.com"
+                style={{ ...inp, borderColor: focused === "email" ? "#0a0a0a" : "#e5e7eb" }}
+                onFocus={() => setFocused("email")} onBlur={() => setFocused(null)}
+                onKeyDown={e => e.key === "Enter" && handleSubmit()}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Contraseña</label>
+              <input
+                type="password" value={password} onChange={e => setPassword(e.target.value)}
+                placeholder={mode === "register" ? "Mínimo 6 caracteres" : "••••••••"}
+                style={{ ...inp, borderColor: focused === "password" ? "#0a0a0a" : "#e5e7eb" }}
+                onFocus={() => setFocused("password")} onBlur={() => setFocused(null)}
+                onKeyDown={e => e.key === "Enter" && handleSubmit()}
+              />
+            </div>
+
+            {/* Error / Success */}
+            {error && (
+              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#b91c1c" }}>
+                ⚠️ {error}
+              </div>
+            )}
+            {success && (
+              <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#166534" }}>
+                ✓ {success}
+              </div>
+            )}
+
+            {/* Submit */}
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              style={{
+                background: "#0a0a0a", color: "#fff", border: "none",
+                borderRadius: 12, padding: "14px", fontSize: 14, fontWeight: 700,
+                cursor: loading ? "default" : "pointer", fontFamily: BODY,
+                opacity: loading ? 0.7 : 1, marginTop: 4,
+              }}
+            >
+              {loading ? "Procesando…" : mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
+            </button>
+          </div>
+        </div>
+
+        <p style={{ textAlign: "center", fontSize: 12, color: "#bbb", marginTop: 20 }}>
+          Tus datos están seguros. No compartimos tu información con terceros.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 /* ─── LEGAL PAGE SHELL ───────────────────────────────────────────────────── */
 function LegalPage({ title, children, onBack }) {
@@ -1324,43 +1495,114 @@ function TermsPage({ onBack }) {
 /* ─── ROOT ───────────────────────────────────────────────────────────────── */
 export default function App() {
   const path = window.location.pathname;
-  const initialView = path === "/dashboard" ? "dashboard"
-    : path === "/privacy" ? "privacy"
-    : path === "/terms" ? "terms"
-    : "landing";
+  const [session, setSession] = useState(undefined); // undefined = cargando, null = sin sesión
+  const [view, setView] = useState(
+    path === "/privacy" ? "privacy" :
+    path === "/terms"   ? "terms"   :
+    "main"
+  );
 
-  const [view, setView] = useState(initialView);
+  // Detectar sesión al cargar y escuchar cambios
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
-  const goHome = () => { setView("landing"); window.history.pushState({}, "", "/"); };
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+  };
 
+  const goHome = () => { setView("main"); window.history.pushState({}, "", "/"); };
+
+  const styles = `
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  `;
+
+  // Páginas públicas — siempre accesibles
+  if (view === "privacy") return <><style>{styles}</style><PrivacyPage onBack={goHome} /></>;
+  if (view === "terms")   return <><style>{styles}</style><TermsPage onBack={goHome} /></>;
+
+  // Cargando sesión
+  if (session === undefined) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fafafa" }}>
+        <style>{styles}</style>
+        <div style={{ width: 36, height: 36, border: "3px solid #e5e7eb", borderTopColor: "#0a0a0a", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      </div>
+    );
+  }
+
+  // Sin sesión — mostrar landing o auth
+  if (!session) {
+    return (
+      <>
+        <style>{styles}</style>
+        <AuthApp
+          onAuth={(s) => setSession(s)}
+          onPrivacy={() => { setView("privacy"); window.history.pushState({}, "", "/privacy"); }}
+          onTerms={() => { setView("terms"); window.history.pushState({}, "", "/terms"); }}
+        />
+      </>
+    );
+  }
+
+  // Con sesión — app principal
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-        @keyframes spin { to{transform:rotate(360deg)} }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-      `}</style>
-
-      {view === "landing" && <LandingPage onGetStarted={() => setView("connect")} onPrivacy={() => { setView("privacy"); window.history.pushState({}, "", "/privacy"); }} onTerms={() => { setView("terms"); window.history.pushState({}, "", "/terms"); }} />}
-
-      {view === "connect" && (
-        <div style={{ minHeight: "100vh", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ width: "100%", maxWidth: 500 }}>
-            <div style={{ textAlign: "center", marginBottom: 28 }}>
-              <span style={{ fontSize: 22, fontFamily: FONT, color: "#0a0a0a" }}>ReviewPilot</span>
-            </div>
-            <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 22, padding: "36px 40px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
-              <ShopifyConnect onBack={() => setView("landing")} onDone={() => setView("dashboard")} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {view === "dashboard" && <Dashboard onConnectMore={() => setView("connect")} />}
-      {view === "privacy" && <PrivacyPage onBack={goHome} />}
-      {view === "terms" && <TermsPage onBack={goHome} />}
+      <style>{styles}</style>
+      <MainApp
+        session={session}
+        onLogout={handleLogout}
+        onPrivacy={() => { setView("privacy"); window.history.pushState({}, "", "/privacy"); }}
+        onTerms={() => { setView("terms"); window.history.pushState({}, "", "/terms"); }}
+      />
     </>
   );
+}
+
+/* ─── AUTH APP (sin sesión) ──────────────────────────────────────────────── */
+function AuthApp({ onAuth, onPrivacy, onTerms }) {
+  const [screen, setScreen] = useState("landing"); // "landing" | "auth"
+  return screen === "landing"
+    ? <LandingPage
+        onGetStarted={() => setScreen("auth")}
+        onPrivacy={onPrivacy}
+        onTerms={onTerms}
+      />
+    : <AuthPage onAuth={onAuth} />;
+}
+
+/* ─── MAIN APP (con sesión) ──────────────────────────────────────────────── */
+function MainApp({ session, onLogout, onPrivacy, onTerms }) {
+  const [screen, setScreen] = useState("dashboard"); // "dashboard" | "connect"
+  const userEmail = session?.user?.email;
+
+  return screen === "connect"
+    ? (
+      <div style={{ minHeight: "100vh", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ width: "100%", maxWidth: 500 }}>
+          <div style={{ textAlign: "center", marginBottom: 28 }}>
+            <span style={{ fontSize: 22, fontFamily: FONT, color: "#0a0a0a" }}>ReviewPilot</span>
+          </div>
+          <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 22, padding: "36px 40px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+            <ShopifyConnect onBack={() => setScreen("dashboard")} onDone={() => setScreen("dashboard")} session={session} />
+          </div>
+        </div>
+      </div>
+    )
+    : <Dashboard
+        onConnectMore={() => setScreen("connect")}
+        onLogout={onLogout}
+        userEmail={userEmail}
+      />;
 }

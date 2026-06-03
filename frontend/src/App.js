@@ -1676,9 +1676,6 @@ function LegalPage({ title, children, onBack }) {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
       {/* Nav */}
       <nav style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 48px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span
-          onClick={onBack}
-          style={{ fontSize: 22, fontFamily: FONT, color: "#0a0a0a", cursor: "pointer" }}
         <Logo height={34} />
         <Btn onClick={onBack} variant="light" size="sm">← Inicio</Btn>
       </nav>

@@ -1223,6 +1223,16 @@ function AuthPage({ onAuth }) {
     </button>
   );
 
+  const friendlyError = (msg) => {
+    console.error("[Auth] Error de Supabase:", msg);
+    if (msg.includes("rate limit") || msg.includes("too many requests")) return "Has realizado demasiados intentos en poco tiempo. Espera unos minutos e inténtalo nuevamente.";
+    if (msg.includes("already registered") || msg.includes("User already registered")) return "Ya existe una cuenta con este correo electrónico.";
+    if (msg.includes("Invalid login credentials") || msg.includes("Invalid login")) return "Correo o contraseña incorrectos.";
+    if (msg.includes("Email not confirmed")) return "Debes confirmar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.";
+    if (msg.includes("Password should be at least")) return "La contraseña debe tener al menos 6 caracteres.";
+    return "Ocurrió un error inesperado. Inténtalo nuevamente.";
+  };
+
   const handleSubmit = async () => {
     setError(null);
     setSuccess(null);
@@ -1236,20 +1246,17 @@ function AuthPage({ onAuth }) {
       if (mode === "login") {
         const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
         if (err) throw err;
+        console.log("[Auth] ✅ Inicio de sesión exitoso:", data.user?.email);
         onAuth(data.session);
       } else {
         const { error: err } = await supabase.auth.signUp({ email, password });
         if (err) throw err;
-        setSuccess("Cuenta creada. Revisa tu email para confirmar tu cuenta y luego inicia sesión.");
+        console.log("[Auth] ✅ Registro exitoso para:", email);
+        setSuccess("Cuenta creada. Revisa tu correo para confirmar tu cuenta.");
         switchMode("login");
       }
     } catch (err) {
-      const msg = err.message || "Error desconocido";
-      setError(
-        msg.includes("Invalid login") ? "Email o contraseña incorrectos." :
-        msg.includes("already registered") ? "Este email ya está registrado. Inicia sesión." :
-        msg
-      );
+      setError(friendlyError(err.message || ""));
     } finally {
       setLoading(false);
     }

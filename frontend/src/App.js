@@ -1208,19 +1208,32 @@ function AuthPage({ onAuth }) {
 
   const sendForgot = async () => {
     setForgotError(null);
-    if (!forgotEmail) { setForgotError("Ingresa tu correo electrónico."); return; }
+    const trimmedEmail = (forgotEmail || "").trim();
+    if (!trimmedEmail) {
+      setForgotError("Ingresa tu correo electrónico.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setForgotError("Ingresa un correo electrónico válido.");
+      return;
+    }
     setForgotLoading(true);
-    console.log("[Auth] Enviando correo de recuperación a:", forgotEmail);
+    console.log("[Auth] Enviando correo de recuperación a:", trimmedEmail);
     try {
-      const { error: err } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
         redirectTo: "https://reviewpilot-fbj.netlify.app",
       });
-      if (err) throw err;
-      console.log("[Auth] ✅ Correo de recuperación enviado");
+      if (error) {
+        console.log("RESET PASSWORD ERROR:", error);
+        setForgotError(`Error de Supabase: ${error.message}`);
+        setForgotLoading(false);
+        return;
+      }
+      console.log("[Auth] ✅ Correo de recuperación enviado a:", trimmedEmail);
       setForgotSuccess(true);
     } catch (err) {
-      console.error("[Auth] Error enviando recuperación:", err.message);
-      setForgotError("No pudimos procesar tu solicitud. Verifica el correo e inténtalo nuevamente.");
+      console.log("RESET PASSWORD ERROR:", err);
+      setForgotError(`Error inesperado: ${err.message}`);
     } finally {
       setForgotLoading(false);
     }
@@ -1407,7 +1420,7 @@ function AuthPage({ onAuth }) {
             {/* Enlace olvidé contraseña — solo en login */}
             {mode === "login" && !forgotMode && (
               <button
-                onClick={() => { setForgotMode(true); setForgotEmail(email); setForgotError(null); setForgotSuccess(false); }}
+                onClick={() => { setForgotMode(true); setForgotEmail(""); setForgotError(null); setForgotSuccess(false); }}
                 style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#888", fontFamily: BODY, padding: 0, textAlign: "center", textDecoration: "underline" }}
               >
                 ¿Olvidaste tu contraseña?

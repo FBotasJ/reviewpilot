@@ -93,7 +93,7 @@ function LandingPage({ onGetStarted, onPrivacy, onTerms, onContact }) {
         padding: "0 48px", height: 64,
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
-        <span style={{ fontSize: 22, fontFamily: FONT, color: "#0a0a0a" }}>ReviewPilot</span>
+        <Logo height={38} />
         <div style={{ display: "flex", gap: 32, fontSize: 14, color: "#777" }}>
           {["Producto", "Precios", "Docs"].map(l => <span key={l} style={{ cursor: "pointer" }}>{l}</span>)}
         </div>
@@ -231,7 +231,7 @@ function LandingPage({ onGetStarted, onPrivacy, onTerms, onContact }) {
       </section>
 
       <footer style={{ borderTop: "1px solid #222", padding: "28px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0a0a0a", flexWrap: "wrap", gap: 12 }}>
-        <span style={{ fontSize: 18, fontFamily: FONT, color: "#fff" }}>ReviewPilot</span>
+        <Logo height={34} dark={true} />
         <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
           <span
             onClick={onPrivacy}
@@ -600,7 +600,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
       {/* Nav */}
       <div style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 40px", height: 60, display: "flex", alignItems: "center", gap: 16 }}>
         <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#888", padding: 0 }}>←</button>
-        <span style={{ fontSize: 20, fontFamily: FONT }}>ReviewPilot</span>
+        <Logo height={32} />
       </div>
 
       <div style={{ maxWidth: 640, margin: "48px auto", padding: "0 24px" }}>
@@ -1110,7 +1110,7 @@ function Dashboard({ onConnectMore, onLogout, userEmail }) {
   return (
     <div style={{ minHeight: "100vh", background: "#fafafa", fontFamily: BODY }}>
       <div style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 40px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 20, fontFamily: FONT }}>ReviewPilot</span>
+        <Logo height={32} />
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {userEmail && <span style={{ fontSize: 13, color: "#aaa" }}>{userEmail}</span>}
           <Btn onClick={onConnectMore} size="sm">+ Conectar tienda</Btn>
@@ -1340,7 +1340,7 @@ function AuthPage({ onAuth }) {
       <div style={{ width: "100%", maxWidth: 440 }}>
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <span style={{ fontSize: 26, fontFamily: FONT, color: "#0a0a0a" }}>ReviewPilot</span>
+          <Logo height={40} />
           <p style={{ fontSize: 13, color: "#aaa", marginTop: 6 }}>
             {mode === "login" ? "Inicia sesión para acceder a tu panel" : "Crea tu cuenta gratuita"}
           </p>
@@ -1565,7 +1565,7 @@ function ResetPasswordPage({ onDone }) {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
       <div style={{ width: "100%", maxWidth: 440 }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <span style={{ fontSize: 26, fontFamily: FONT, color: "#0a0a0a" }}>ReviewPilot</span>
+          <Logo height={40} />
           <p style={{ fontSize: 13, color: "#aaa", marginTop: 6 }}>Restablece tu contraseña</p>
         </div>
 
@@ -1679,7 +1679,7 @@ function LegalPage({ title, children, onBack }) {
         <span
           onClick={onBack}
           style={{ fontSize: 22, fontFamily: FONT, color: "#0a0a0a", cursor: "pointer" }}
-        >ReviewPilot</span>
+        <Logo height={34} />
         <Btn onClick={onBack} variant="light" size="sm">← Inicio</Btn>
       </nav>
       {/* Content */}
@@ -1690,7 +1690,7 @@ function LegalPage({ title, children, onBack }) {
       </div>
       {/* Footer */}
       <footer style={{ borderTop: "1px solid #ececec", padding: "24px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", flexWrap: "wrap", gap: 12 }}>
-        <span style={{ fontSize: 16, fontFamily: FONT, color: "#0a0a0a" }}>ReviewPilot</span>
+        <Logo height={30} />
         <div style={{ display: "flex", gap: 16, fontSize: 13, color: "#888", flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ cursor: "pointer" }} onClick={() => window.location.assign("/privacy")}>Política de Privacidad</span>
           <span style={{ color: "#ccc" }}>|</span>
@@ -1961,7 +1961,7 @@ function MainApp({ session, onLogout, onPrivacy, onTerms }) {
       <div style={{ minHeight: "100vh", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div style={{ width: "100%", maxWidth: 500 }}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <span style={{ fontSize: 22, fontFamily: FONT, color: "#0a0a0a" }}>ReviewPilot</span>
+            <Logo height={38} />
           </div>
           <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 22, padding: "36px 40px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
             <ShopifyConnect onBack={() => setScreen("dashboard")} onDone={() => setScreen("dashboard")} session={session} />

@@ -1782,6 +1782,7 @@ export default function App() {
   const path = window.location.pathname;
   const hash = window.location.hash;
   const isPasswordRecovery = hash.includes("type=recovery");
+  const wantsDashboard = path === "/dashboard" || path.startsWith("/dashboard");
 
   const [session, setSession] = useState(undefined);
   const [view, setView] = useState(
@@ -1798,9 +1799,7 @@ export default function App() {
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       console.log("[Auth] Auth event:", event);
-      if (event === "PASSWORD_RECOVERY") {
-        setView("reset");
-      }
+      if (event === "PASSWORD_RECOVERY") setView("reset");
       setSession(s ?? null);
     });
     return () => subscription.unsubscribe();
@@ -1809,6 +1808,7 @@ export default function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
+    window.history.pushState({}, "", "/");
   };
 
   const goHome = () => { setView("main"); window.history.pushState({}, "", "/"); };
@@ -1824,7 +1824,7 @@ export default function App() {
   // Páginas públicas y reset — accesibles sin sesión
   if (view === "privacy") return <><style>{styles}</style><PrivacyPage onBack={goHome} /></>;
   if (view === "terms")   return <><style>{styles}</style><TermsPage onBack={goHome} /></>;
-  if (view === "reset")   return <><style>{styles}</style><ResetPasswordPage onDone={() => { setView("main"); window.history.replaceState({}, "", "/"); }} /></>;
+  if (view === "reset")   return <><style>{styles}</style><ResetPasswordPage onDone={() => { window.history.replaceState({}, "", "/"); setView("main"); }} /></>;
 
   // Cargando sesión
   if (session === undefined) {
@@ -1836,13 +1836,17 @@ export default function App() {
     );
   }
 
-  // Sin sesión — mostrar landing o auth
+  // Sin sesión
   if (!session) {
     return (
       <>
         <style>{styles}</style>
         <AuthApp
-          onAuth={(s) => setSession(s)}
+          startOnAuth={wantsDashboard}  // si iban a /dashboard, saltar la landing e ir directo al login
+          onAuth={(s) => {
+            setSession(s);
+            window.history.replaceState({}, "", "/dashboard");
+          }}
           onPrivacy={() => { setView("privacy"); window.history.pushState({}, "", "/privacy"); }}
           onTerms={() => { setView("terms"); window.history.pushState({}, "", "/terms"); }}
         />
@@ -1850,7 +1854,7 @@ export default function App() {
     );
   }
 
-  // Con sesión — app principal
+  // Con sesión — app principal (siempre muestra dashboard)
   return (
     <>
       <style>{styles}</style>
@@ -1865,20 +1869,20 @@ export default function App() {
 }
 
 /* ─── AUTH APP (sin sesión) ──────────────────────────────────────────────── */
-function AuthApp({ onAuth, onPrivacy, onTerms }) {
-  const [screen, setScreen] = useState("landing"); // "landing" | "auth"
+function AuthApp({ onAuth, onPrivacy, onTerms, startOnAuth }) {
+  const [screen, setScreen] = useState(startOnAuth ? "auth" : "landing");
   return screen === "landing"
     ? <LandingPage
         onGetStarted={() => setScreen("auth")}
         onPrivacy={onPrivacy}
         onTerms={onTerms}
       />
-    : <AuthPage onAuth={onAuth} />;
+    : <AuthPage onAuth={onAuth} onBack={startOnAuth ? null : () => setScreen("landing")} />;
 }
 
 /* ─── MAIN APP (con sesión) ──────────────────────────────────────────────── */
 function MainApp({ session, onLogout, onPrivacy, onTerms }) {
-  const [screen, setScreen] = useState("dashboard"); // "dashboard" | "connect"
+  const [screen, setScreen] = useState("dashboard");
   const userEmail = session?.user?.email;
 
   return screen === "connect"

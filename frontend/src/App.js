@@ -53,7 +53,7 @@ function Btn({ children, onClick, variant = "dark", size = "md", style: s = {}, 
 }
 
 /* ─── LANDING PAGE ───────────────────────────────────────────────────────── */
-function LandingPage({ onGetStarted, onPrivacy, onTerms }) {
+function LandingPage({ onGetStarted, onPrivacy, onTerms, onContact }) {
   const steps = [
     { n: "01", title: "Conecta tu tienda", desc: "Shopify, WooCommerce, Airbnb o Stripe. Un clic y listo." },
     { n: "02", title: "Elige el disparador", desc: "Pedido entregado, check-out, onboarding completado…" },
@@ -214,22 +214,35 @@ function LandingPage({ onGetStarted, onPrivacy, onTerms }) {
         <Btn onClick={onGetStarted} size="lg" variant="light">Crear cuenta gratis →</Btn>
       </section>
 
-      <footer style={{ borderTop: "1px solid #222", padding: "28px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0a0a0a" }}>
+      <footer style={{ borderTop: "1px solid #222", padding: "28px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0a0a0a", flexWrap: "wrap", gap: 12 }}>
         <span style={{ fontSize: 18, fontFamily: FONT, color: "#fff" }}>ReviewPilot</span>
-        <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
           <span
             onClick={onPrivacy}
             style={{ fontSize: 13, color: "#888", cursor: "pointer", fontFamily: BODY }}
             onMouseEnter={e => e.target.style.color = "#fff"}
             onMouseLeave={e => e.target.style.color = "#888"}
           >Política de Privacidad</span>
+          <span style={{ color: "#333", fontSize: 12 }}>|</span>
           <span
             onClick={onTerms}
             style={{ fontSize: 13, color: "#888", cursor: "pointer", fontFamily: BODY }}
             onMouseEnter={e => e.target.style.color = "#fff"}
             onMouseLeave={e => e.target.style.color = "#888"}
           >Términos de Servicio</span>
-          <span style={{ fontSize: 12, color: "#555" }}>© 2026 ReviewPilot</span>
+          <span style={{ color: "#333", fontSize: 12 }}>|</span>
+          <span
+            onClick={onContact}
+            style={{ fontSize: 13, color: "#888", cursor: "pointer", fontFamily: BODY }}
+            onMouseEnter={e => e.target.style.color = "#fff"}
+            onMouseLeave={e => e.target.style.color = "#888"}
+          >Contacto</span>
+          <span style={{ color: "#333", fontSize: 12 }}>|</span>
+          <a href="mailto:support@reviewpilot.company" style={{ fontSize: 13, color: "#888", textDecoration: "none", fontFamily: BODY }}
+            onMouseEnter={e => e.target.style.color = "#fff"}
+            onMouseLeave={e => e.target.style.color = "#888"}
+          >support@reviewpilot.company</a>
+          <span style={{ fontSize: 12, color: "#333" }}>© 2026 ReviewPilot</span>
         </div>
       </footer>
     </div>
@@ -1607,6 +1620,39 @@ function ResetPasswordPage({ onDone }) {
   );
 }
 
+/* ─── CONTACT PAGE ───────────────────────────────────────────────────────── */
+function ContactPage({ onBack }) {
+  return (
+    <LegalPage title="Contacto" onBack={onBack}>
+      <Section title="¿Necesitas ayuda con ReviewPilot?">
+        <Legal_P>Nuestro equipo está disponible para ayudarte con dudas sobre la aplicación, privacidad de datos, integraciones con Shopify o soporte técnico en general.</Legal_P>
+      </Section>
+
+      <Section title="Correo de soporte">
+        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "24px 28px", display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>
+          <div style={{ fontSize: 28 }}>✉️</div>
+          <div>
+            <p style={{ fontSize: 13, color: "#aaa", marginBottom: 4, fontFamily: BODY }}>Escríbenos a</p>
+            <a href="mailto:support@reviewpilot.company" style={{ fontSize: 18, fontWeight: 700, color: "#2563eb", textDecoration: "none", fontFamily: BODY }}>
+              support@reviewpilot.company
+            </a>
+          </div>
+        </div>
+        <Legal_P>Tiempo de respuesta estimado: <strong>24 a 48 horas hábiles.</strong></Legal_P>
+      </Section>
+
+      <Section title="¿En qué podemos ayudarte?">
+        <Legal_Li>Dudas sobre el funcionamiento de la app</Legal_Li>
+        <Legal_Li>Configuración de solicitudes de reseña</Legal_Li>
+        <Legal_Li>Integración con tu tienda Shopify</Legal_Li>
+        <Legal_Li>Solicitudes de eliminación de datos (RGPD / LFPDPPP)</Legal_Li>
+        <Legal_Li>Reporte de errores o problemas técnicos</Legal_Li>
+        <Legal_Li>Preguntas sobre privacidad y términos de servicio</Legal_Li>
+      </Section>
+    </LegalPage>
+  );
+}
+
 /* ─── LEGAL PAGE SHELL ───────────────────────────────────────────────────── */
 function LegalPage({ title, children, onBack }) {
   return (
@@ -1627,11 +1673,16 @@ function LegalPage({ title, children, onBack }) {
         {children}
       </div>
       {/* Footer */}
-      <footer style={{ borderTop: "1px solid #ececec", padding: "24px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff" }}>
+      <footer style={{ borderTop: "1px solid #ececec", padding: "24px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", flexWrap: "wrap", gap: 12 }}>
         <span style={{ fontSize: 16, fontFamily: FONT, color: "#0a0a0a" }}>ReviewPilot</span>
-        <div style={{ display: "flex", gap: 24, fontSize: 13, color: "#888" }}>
-          <span style={{ cursor: "pointer" }} onClick={() => window.location.pathname !== "/privacy" && window.location.assign("/privacy")}>Política de Privacidad</span>
-          <span style={{ cursor: "pointer" }} onClick={() => window.location.pathname !== "/terms" && window.location.assign("/terms")}>Términos de Servicio</span>
+        <div style={{ display: "flex", gap: 16, fontSize: 13, color: "#888", flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ cursor: "pointer" }} onClick={() => window.location.assign("/privacy")}>Política de Privacidad</span>
+          <span style={{ color: "#ccc" }}>|</span>
+          <span style={{ cursor: "pointer" }} onClick={() => window.location.assign("/terms")}>Términos de Servicio</span>
+          <span style={{ color: "#ccc" }}>|</span>
+          <span style={{ cursor: "pointer" }} onClick={() => window.location.assign("/contact")}>Contacto</span>
+          <span style={{ color: "#ccc" }}>|</span>
+          <a href="mailto:support@reviewpilot.company" style={{ color: "#888", textDecoration: "none" }}>support@reviewpilot.company</a>
         </div>
       </footer>
     </div>
@@ -1716,7 +1767,7 @@ function PrivacyPage({ onBack }) {
       </Section>
 
       <Section title="7. Contacto">
-        <Legal_P>Para preguntas sobre privacidad o solicitudes de eliminación de datos, contáctanos en: <strong>fbotasjacob@gmail.com</strong></Legal_P>
+        <Legal_P>Para preguntas sobre privacidad o solicitudes de eliminación de datos, contáctanos en: <a href="mailto:support@reviewpilot.company" style={{color:"#2563eb"}}>support@reviewpilot.company</a></Legal_P>
       </Section>
 
     </LegalPage>
@@ -1770,7 +1821,7 @@ function TermsPage({ onBack }) {
       </Section>
 
       <Section title="10. Contacto">
-        <Legal_P>Para preguntas sobre estos Términos: <strong>fbotasjacob@gmail.com</strong></Legal_P>
+        <Legal_P>Para preguntas sobre estos Términos: <a href="mailto:support@reviewpilot.company" style={{color:"#2563eb"}}>support@reviewpilot.company</a></Legal_P>
       </Section>
 
     </LegalPage>
@@ -1789,6 +1840,7 @@ export default function App() {
     isPasswordRecovery ? "reset" :
     path === "/privacy" ? "privacy" :
     path === "/terms"   ? "terms"   :
+    path === "/contact" ? "contact" :
     "main"
   );
 
@@ -1824,6 +1876,7 @@ export default function App() {
   // Páginas públicas y reset — accesibles sin sesión
   if (view === "privacy") return <><style>{styles}</style><PrivacyPage onBack={goHome} /></>;
   if (view === "terms")   return <><style>{styles}</style><TermsPage onBack={goHome} /></>;
+  if (view === "contact") return <><style>{styles}</style><ContactPage onBack={goHome} /></>;
   if (view === "reset")   return <><style>{styles}</style><ResetPasswordPage onDone={() => { window.history.replaceState({}, "", "/"); setView("main"); }} /></>;
 
   // Cargando sesión
@@ -1842,13 +1895,14 @@ export default function App() {
       <>
         <style>{styles}</style>
         <AuthApp
-          startOnAuth={wantsDashboard}  // si iban a /dashboard, saltar la landing e ir directo al login
+          startOnAuth={wantsDashboard}
           onAuth={(s) => {
             setSession(s);
             window.history.replaceState({}, "", "/dashboard");
           }}
           onPrivacy={() => { setView("privacy"); window.history.pushState({}, "", "/privacy"); }}
           onTerms={() => { setView("terms"); window.history.pushState({}, "", "/terms"); }}
+          onContact={() => { setView("contact"); window.history.pushState({}, "", "/contact"); }}
         />
       </>
     );
@@ -1869,13 +1923,14 @@ export default function App() {
 }
 
 /* ─── AUTH APP (sin sesión) ──────────────────────────────────────────────── */
-function AuthApp({ onAuth, onPrivacy, onTerms, startOnAuth }) {
+function AuthApp({ onAuth, onPrivacy, onTerms, onContact, startOnAuth }) {
   const [screen, setScreen] = useState(startOnAuth ? "auth" : "landing");
   return screen === "landing"
     ? <LandingPage
         onGetStarted={() => setScreen("auth")}
         onPrivacy={onPrivacy}
         onTerms={onTerms}
+        onContact={onContact}
       />
     : <AuthPage onAuth={onAuth} onBack={startOnAuth ? null : () => setScreen("landing")} />;
 }

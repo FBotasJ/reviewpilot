@@ -35,7 +35,7 @@ function Btn({ children, onClick, variant = "dark", size = "md", style: s = {}, 
 }
 
 /* ─── LANDING PAGE ───────────────────────────────────────────────────────── */
-function LandingPage({ onGetStarted }) {
+function LandingPage({ onGetStarted, onPrivacy, onTerms }) {
   const steps = [
     { n: "01", title: "Conecta tu tienda", desc: "Shopify, WooCommerce, Airbnb o Stripe. Un clic y listo." },
     { n: "02", title: "Elige el disparador", desc: "Pedido entregado, check-out, onboarding completado…" },
@@ -198,7 +198,21 @@ function LandingPage({ onGetStarted }) {
 
       <footer style={{ borderTop: "1px solid #222", padding: "28px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0a0a0a" }}>
         <span style={{ fontSize: 18, fontFamily: FONT, color: "#fff" }}>ReviewPilot</span>
-        <span style={{ fontSize: 12, color: "#555" }}>© 2026 ReviewPilot. Todos los derechos reservados.</span>
+        <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+          <span
+            onClick={onPrivacy}
+            style={{ fontSize: 13, color: "#888", cursor: "pointer", fontFamily: BODY }}
+            onMouseEnter={e => e.target.style.color = "#fff"}
+            onMouseLeave={e => e.target.style.color = "#888"}
+          >Política de Privacidad</span>
+          <span
+            onClick={onTerms}
+            style={{ fontSize: 13, color: "#888", cursor: "pointer", fontFamily: BODY }}
+            onMouseEnter={e => e.target.style.color = "#fff"}
+            onMouseLeave={e => e.target.style.color = "#888"}
+          >Términos de Servicio</span>
+          <span style={{ fontSize: 12, color: "#555" }}>© 2026 ReviewPilot</span>
+        </div>
       </footer>
     </div>
   );
@@ -1136,10 +1150,188 @@ function Dashboard({ onConnectMore }) {
   );
 }
 
+
+/* ─── LEGAL PAGE SHELL ───────────────────────────────────────────────────── */
+function LegalPage({ title, children, onBack }) {
+  return (
+    <div style={{ minHeight: "100vh", background: "#fafafa", fontFamily: BODY }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
+      {/* Nav */}
+      <nav style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 48px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span
+          onClick={onBack}
+          style={{ fontSize: 22, fontFamily: FONT, color: "#0a0a0a", cursor: "pointer" }}
+        >ReviewPilot</span>
+        <Btn onClick={onBack} variant="light" size="sm">← Inicio</Btn>
+      </nav>
+      {/* Content */}
+      <div style={{ maxWidth: 760, margin: "0 auto", padding: "56px 24px 80px" }}>
+        <h1 style={{ fontSize: 40, fontFamily: FONT, fontWeight: 400, color: "#0a0a0a", marginBottom: 8 }}>{title}</h1>
+        <p style={{ fontSize: 13, color: "#aaa", marginBottom: 48 }}>Última actualización: 1 de junio de 2026</p>
+        {children}
+      </div>
+      {/* Footer */}
+      <footer style={{ borderTop: "1px solid #ececec", padding: "24px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff" }}>
+        <span style={{ fontSize: 16, fontFamily: FONT, color: "#0a0a0a" }}>ReviewPilot</span>
+        <div style={{ display: "flex", gap: 24, fontSize: 13, color: "#888" }}>
+          <span style={{ cursor: "pointer" }} onClick={() => window.location.pathname !== "/privacy" && window.location.assign("/privacy")}>Política de Privacidad</span>
+          <span style={{ cursor: "pointer" }} onClick={() => window.location.pathname !== "/terms" && window.location.assign("/terms")}>Términos de Servicio</span>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function Section({ title, children }) {
+  return (
+    <div style={{ marginBottom: 40 }}>
+      <h2 style={{ fontSize: 22, fontWeight: 700, color: "#0a0a0a", marginBottom: 12, fontFamily: BODY }}>{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function Legal_P({ children }) {
+  return <p style={{ fontSize: 15, color: "#444", lineHeight: 1.8, marginBottom: 12, fontFamily: BODY }}>{children}</p>;
+}
+
+function Legal_Li({ children }) {
+  return (
+    <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
+      <span style={{ color: "#0a0a0a", fontWeight: 700, flexShrink: 0 }}>•</span>
+      <p style={{ fontSize: 15, color: "#444", lineHeight: 1.8, margin: 0, fontFamily: BODY }}>{children}</p>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 12, padding: "10px 0", borderBottom: "1px solid #f3f4f6" }}>
+      <span style={{ fontSize: 13, fontWeight: 700, color: "#666", fontFamily: BODY }}>{label}</span>
+      <span style={{ fontSize: 14, color: "#333", fontFamily: BODY }}>{value}</span>
+    </div>
+  );
+}
+
+/* ─── PRIVACY PAGE ───────────────────────────────────────────────────────── */
+function PrivacyPage({ onBack }) {
+  return (
+    <LegalPage title="Política de Privacidad" onBack={onBack}>
+
+      <Section title="1. Introducción">
+        <Legal_P>ReviewPilot ("nosotros", "la app") es una aplicación de Shopify que ayuda a los comerciantes a enviar solicitudes de reseña a sus clientes después de una compra. Esta Política de Privacidad explica cómo manejamos los datos de los comerciantes (dueños de tiendas Shopify) y de sus clientes.</Legal_P>
+        <Legal_P>Al instalar ReviewPilot, aceptas esta Política de Privacidad. Si no estás de acuerdo, desinstala la app.</Legal_P>
+      </Section>
+
+      <Section title="2. Datos del comerciante">
+        <Legal_P>Cuando un comerciante instala ReviewPilot, recopilamos y almacenamos:</Legal_P>
+        <Legal_Li>Dominio de la tienda (ej: tutienda.myshopify.com)</Legal_Li>
+        <Legal_Li>Token de acceso OAuth — para recibir notificaciones de pedidos entregados</Legal_Li>
+        <Legal_Li>Configuración de solicitudes de reseña (reglas, días de espera, prompt de IA, enlace de Google Reviews)</Legal_Li>
+        <Legal_P>Estos datos se almacenan en nuestra base de datos (Supabase) y se usan exclusivamente para operar la app. No vendemos ni compartimos los datos del comerciante con terceros.</Legal_P>
+      </Section>
+
+      <Section title="3. Datos del cliente final">
+        <Legal_P>ReviewPilot procesa los siguientes datos de clientes desde los webhooks de Shopify:</Legal_P>
+        <Legal_Li>Nombre del cliente — para personalizar el saludo del email de solicitud de reseña</Legal_Li>
+        <Legal_Li>Correo electrónico del cliente — para entregar el email de solicitud de reseña</Legal_Li>
+        <Legal_P style={{ fontWeight: 700 }}>IMPORTANTE: Estos datos se procesan exclusivamente en memoria. NUNCA se almacenan en ninguna base de datos, archivo de log, ni sistema de almacenamiento persistente. Se usan únicamente para generar y enviar un solo email y se descartan inmediatamente después.</Legal_P>
+      </Section>
+
+      <Section title="4. Retención de datos">
+        <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden", marginTop: 8 }}>
+          <InfoRow label="Configuración del comerciante" value="Retenida mientras la app esté instalada. Eliminada al desinstalar." />
+          <InfoRow label="Nombre del cliente" value="No se retiene. Solo se procesa en memoria." />
+          <InfoRow label="Email del cliente" value="No se retiene. Solo se procesa en memoria." />
+          <InfoRow label="Logs de envío" value="No se retienen. Solo estado de entrega de Resend (sin datos personales)." />
+        </div>
+      </Section>
+
+      <Section title="5. Proveedores de terceros">
+        <Legal_Li><strong>Resend (resend.com)</strong> — Proveedor de entrega de email. El email del cliente se comparte únicamente para la entrega. Certificado SOC 2 Tipo II.</Legal_Li>
+        <Legal_Li><strong>Anthropic (anthropic.com)</strong> — Generación de mensajes con IA. El nombre del cliente se incluye en el prompt. Anthropic no usa estos datos para entrenar modelos.</Legal_Li>
+        <Legal_Li><strong>Railway (railway.app)</strong> — Hosting del backend. No se almacenan datos de clientes en Railway.</Legal_Li>
+        <Legal_Li><strong>Supabase (supabase.com)</strong> — Base de datos solo para configuración del comerciante. No se almacenan datos de clientes.</Legal_Li>
+      </Section>
+
+      <Section title="6. Tus derechos">
+        <Legal_P>Los clientes que deseen no recibir más emails de solicitud de reseña de un comerciante específico deben contactar directamente a ese comerciante.</Legal_P>
+        <Legal_P>Los comerciantes que deseen eliminar sus datos deben desinstalar la app ReviewPilot, lo cual activará la eliminación de toda la configuración almacenada.</Legal_P>
+      </Section>
+
+      <Section title="7. Contacto">
+        <Legal_P>Para preguntas sobre privacidad o solicitudes de eliminación de datos, contáctanos en: <strong>fbotasjacob@gmail.com</strong></Legal_P>
+      </Section>
+
+    </LegalPage>
+  );
+}
+
+/* ─── TERMS PAGE ─────────────────────────────────────────────────────────── */
+function TermsPage({ onBack }) {
+  return (
+    <LegalPage title="Términos de Servicio" onBack={onBack}>
+
+      <Section title="1. Aceptación">
+        <Legal_P>Al instalar ReviewPilot, tú ("el comerciante") aceptas estos Términos de Servicio. Si no estás de acuerdo, no instales la app.</Legal_P>
+      </Section>
+
+      <Section title="2. Descripción del servicio">
+        <Legal_P>ReviewPilot automatiza los emails de solicitud de reseña post-compra. El comerciante configura las reglas; ReviewPilot genera mensajes personalizados usando IA (Claude de Anthropic) y los envía a los clientes por email después de que su pedido ha sido entregado.</Legal_P>
+      </Section>
+
+      <Section title="3. Responsabilidades del comerciante">
+        <Legal_Li>Eres responsable de asegurarte de que tienes el derecho legal de enviar emails a tus clientes en tu jurisdicción (p. ej., cumplimiento con CAN-SPAM, GDPR, LFPDPPP, CASL).</Legal_Li>
+        <Legal_Li>Eres responsable de configurar un enlace de Google Reviews correcto y vigente.</Legal_Li>
+        <Legal_Li>No debes usar ReviewPilot para enviar spam, contenido engañoso, o cualquier comunicación que viole las leyes aplicables.</Legal_Li>
+        <Legal_Li>Eres responsable del contenido de tu prompt de IA. No incluyas instrucciones para generar contenido falso, engañoso o ilegal.</Legal_Li>
+        <Legal_Li>No debes usar ReviewPilot para recopilar, almacenar o procesar datos de clientes más allá de lo descrito en la Política de Privacidad.</Legal_Li>
+      </Section>
+
+      <Section title="4. Manejo de datos">
+        <Legal_P>ReviewPilot procesa nombre y email del cliente en memoria exclusivamente para enviar emails de solicitud de reseña. No se almacenan datos de clientes. Consulta nuestra Política de Privacidad para más detalles.</Legal_P>
+      </Section>
+
+      <Section title="5. Disponibilidad del servicio">
+        <Legal_P>ReviewPilot se provee "tal como está". Nos esforzamos por mantener alta disponibilidad, pero no garantizamos disponibilidad ininterrumpida. Podemos actualizar, modificar o descontinuar funciones sin previo aviso.</Legal_P>
+      </Section>
+
+      <Section title="6. Limitación de responsabilidad">
+        <Legal_P>ReviewPilot no es responsable por daños indirectos, incidentales o consecuentes derivados del uso de la app, incluyendo: fallas en la entrega de emails, calidad del contenido generado por IA, o disponibilidad de la API de Shopify.</Legal_P>
+        <Legal_P>Nuestra responsabilidad máxima se limita al monto pagado por el servicio en los últimos 3 meses.</Legal_P>
+      </Section>
+
+      <Section title="7. Terminación">
+        <Legal_P>Cualquiera de las partes puede terminar este acuerdo en cualquier momento. Desinstalar ReviewPilot de tu tienda Shopify constituye terminación. Al terminar, todos los datos de configuración almacenados del comerciante serán eliminados.</Legal_P>
+      </Section>
+
+      <Section title="8. Cambios a los términos">
+        <Legal_P>Podemos actualizar estos Términos en cualquier momento. El uso continuado de la app después de los cambios constituye aceptación de los nuevos Términos. Te notificaremos cambios materiales por email.</Legal_P>
+      </Section>
+
+      <Section title="9. Ley aplicable">
+        <Legal_P>Estos Términos se rigen por las leyes de México. Cualquier disputa se resolverá en los tribunales competentes de la Ciudad de México.</Legal_P>
+      </Section>
+
+      <Section title="10. Contacto">
+        <Legal_P>Para preguntas sobre estos Términos: <strong>fbotasjacob@gmail.com</strong></Legal_P>
+      </Section>
+
+    </LegalPage>
+  );
+}
+
 /* ─── ROOT ───────────────────────────────────────────────────────────────── */
 export default function App() {
-  const isDashboard = window.location.pathname === "/dashboard";
-  const [view, setView] = useState(isDashboard ? "dashboard" : "landing");
+  const path = window.location.pathname;
+  const initialView = path === "/dashboard" ? "dashboard"
+    : path === "/privacy" ? "privacy"
+    : path === "/terms" ? "terms"
+    : "landing";
+
+  const [view, setView] = useState(initialView);
+
+  const goHome = () => { setView("landing"); window.history.pushState({}, "", "/"); };
 
   return (
     <>
@@ -1151,7 +1343,7 @@ export default function App() {
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
       `}</style>
 
-      {view === "landing" && <LandingPage onGetStarted={() => setView("connect")} />}
+      {view === "landing" && <LandingPage onGetStarted={() => setView("connect")} onPrivacy={() => { setView("privacy"); window.history.pushState({}, "", "/privacy"); }} onTerms={() => { setView("terms"); window.history.pushState({}, "", "/terms"); }} />}
 
       {view === "connect" && (
         <div style={{ minHeight: "100vh", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -1167,6 +1359,8 @@ export default function App() {
       )}
 
       {view === "dashboard" && <Dashboard onConnectMore={() => setView("connect")} />}
+      {view === "privacy" && <PrivacyPage onBack={goHome} />}
+      {view === "terms" && <TermsPage onBack={goHome} />}
     </>
   );
 }

@@ -1198,8 +1198,33 @@ function AuthPage({ onAuth }) {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [focused, setFocused] = useState(null);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState(null);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
 
-  const switchMode = (m) => { setMode(m); setError(null); setSuccess(null); setConfirm(""); setShowPwd(false); setShowConfirm(false); };
+  const switchMode = (m) => { setMode(m); setError(null); setSuccess(null); setConfirm(""); setShowPwd(false); setShowConfirm(false); setForgotMode(false); };
+
+  const sendForgot = async () => {
+    setForgotError(null);
+    if (!forgotEmail) { setForgotError("Ingresa tu correo electrónico."); return; }
+    setForgotLoading(true);
+    console.log("[Auth] Enviando correo de recuperación a:", forgotEmail);
+    try {
+      const { error: err } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: "https://reviewpilot-fbj.netlify.app",
+      });
+      if (err) throw err;
+      console.log("[Auth] ✅ Correo de recuperación enviado");
+      setForgotSuccess(true);
+    } catch (err) {
+      console.error("[Auth] Error enviando recuperación:", err.message);
+      setForgotError("No pudimos procesar tu solicitud. Verifica el correo e inténtalo nuevamente.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
   const inp = {
     flex: 1, border: "1.5px solid #e5e7eb", borderRadius: 10,
@@ -1378,12 +1403,187 @@ function AuthPage({ onAuth }) {
             >
               {loading ? "Procesando…" : mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
             </button>
+
+            {/* Enlace olvidé contraseña — solo en login */}
+            {mode === "login" && !forgotMode && (
+              <button
+                onClick={() => { setForgotMode(true); setForgotEmail(email); setForgotError(null); setForgotSuccess(false); }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#888", fontFamily: BODY, padding: 0, textAlign: "center", textDecoration: "underline" }}
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            )}
           </div>
+
+          {/* Formulario de recuperación — aparece debajo del login */}
+          {forgotMode && (
+            <div style={{ marginTop: 24, borderTop: "1px solid #f3f4f6", paddingTop: 20 }}>
+              {!forgotSuccess ? (
+                <>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#0a0a0a", marginBottom: 4 }}>Recuperar contraseña</p>
+                  <p style={{ fontSize: 13, color: "#888", marginBottom: 14 }}>Te enviaremos un enlace para restablecer tu contraseña.</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <input
+                      type="email" value={forgotEmail}
+                      onChange={e => { setForgotEmail(e.target.value); setForgotError(null); }}
+                      placeholder="tu@email.com"
+                      style={{ ...inp, width: "100%", borderColor: "#e5e7eb" }}
+                      onKeyDown={e => e.key === "Enter" && sendForgot()}
+                    />
+                    {forgotError && (
+                      <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#b91c1c" }}>
+                        ⚠️ {forgotError}
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        onClick={sendForgot} disabled={forgotLoading}
+                        style={{ flex: 1, background: "#0a0a0a", color: "#fff", border: "none", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 700, cursor: forgotLoading ? "default" : "pointer", fontFamily: BODY, opacity: forgotLoading ? 0.7 : 1 }}
+                      >
+                        {forgotLoading ? "Enviando…" : "Enviar enlace"}
+                      </button>
+                      <button
+                        onClick={() => setForgotMode(false)}
+                        style={{ background: "none", border: "1.5px solid #e5e7eb", borderRadius: 10, padding: "11px 16px", fontSize: 13, color: "#555", cursor: "pointer", fontFamily: BODY }}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: "16px 18px", textAlign: "center" }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>✉️</div>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#166534", marginBottom: 4 }}>Correo enviado</p>
+                  <p style={{ fontSize: 13, color: "#166534" }}>Te hemos enviado un correo para restablecer tu contraseña. Revisa tu bandeja de entrada.</p>
+                  <button
+                    onClick={() => { setForgotMode(false); setForgotSuccess(false); }}
+                    style={{ marginTop: 14, background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#166534", fontFamily: BODY, textDecoration: "underline" }}
+                  >
+                    Volver al inicio de sesión
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <p style={{ textAlign: "center", fontSize: 12, color: "#bbb", marginTop: 20 }}>
           Tus datos están seguros. No compartimos tu información con terceros.
         </p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── RESET PASSWORD PAGE ────────────────────────────────────────────────── */
+function ResetPasswordPage({ onDone }) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+
+  const inp = {
+    flex: 1, border: "1.5px solid #e5e7eb", borderRadius: 10,
+    padding: "12px 14px", fontSize: 14, fontFamily: BODY, outline: "none",
+    background: "#fff", width: "100%",
+  };
+
+  const handleReset = async () => {
+    setError(null);
+    if (!password) { setError("Ingresa tu nueva contraseña."); return; }
+    if (password.length < 8) { setError("La contraseña debe tener al menos 8 caracteres."); return; }
+    if (password !== confirm) { setError("Las contraseñas no coinciden."); return; }
+    setLoading(true);
+    console.log("[Auth] Actualizando contraseña...");
+    try {
+      const { error: err } = await supabase.auth.updateUser({ password });
+      if (err) throw err;
+      console.log("[Auth] ✅ Contraseña actualizada correctamente");
+      setSuccess(true);
+      setTimeout(() => onDone(), 3000);
+    } catch (err) {
+      console.error("[Auth] Error actualizando contraseña:", err.message);
+      setError("No se pudo actualizar la contraseña. El enlace puede haber expirado. Solicita uno nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: BODY }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
+      <div style={{ width: "100%", maxWidth: 440 }}>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <span style={{ fontSize: 26, fontFamily: FONT, color: "#0a0a0a" }}>ReviewPilot</span>
+          <p style={{ fontSize: 13, color: "#aaa", marginTop: 6 }}>Restablece tu contraseña</p>
+        </div>
+
+        <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 20, padding: "36px 40px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+          {!success ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <p style={{ fontSize: 14, color: "#555" }}>Ingresa tu nueva contraseña. Debe tener al menos 8 caracteres.</p>
+
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Nueva contraseña</label>
+                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <input
+                    type={showPwd ? "text" : "password"}
+                    value={password} onChange={e => setPassword(e.target.value)}
+                    placeholder="Mínimo 8 caracteres"
+                    style={{ ...inp, paddingRight: 40 }}
+                    onKeyDown={e => e.key === "Enter" && handleReset()}
+                  />
+                  <button type="button" onClick={() => setShowPwd(s => !s)} tabIndex={-1}
+                    style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#bbb" }}>
+                    {showPwd ? "🙈" : "👁"}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Confirmar contraseña</label>
+                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <input
+                    type={showConfirm ? "text" : "password"}
+                    value={confirm} onChange={e => setConfirm(e.target.value)}
+                    placeholder="Repite tu nueva contraseña"
+                    style={{ ...inp, paddingRight: 40, borderColor: confirm && confirm !== password ? "#f87171" : "#e5e7eb" }}
+                    onKeyDown={e => e.key === "Enter" && handleReset()}
+                  />
+                  <button type="button" onClick={() => setShowConfirm(s => !s)} tabIndex={-1}
+                    style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 16, color: "#bbb" }}>
+                    {showConfirm ? "🙈" : "👁"}
+                  </button>
+                </div>
+                {confirm && confirm !== password && <p style={{ fontSize: 12, color: "#ef4444", marginTop: 4 }}>Las contraseñas no coinciden.</p>}
+                {confirm && confirm === password && <p style={{ fontSize: 12, color: "#16a34a", marginTop: 4 }}>✓ Las contraseñas coinciden.</p>}
+              </div>
+
+              {error && (
+                <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#b91c1c" }}>
+                  ⚠️ {error}
+                </div>
+              )}
+
+              <button
+                onClick={handleReset} disabled={loading}
+                style={{ background: "#0a0a0a", color: "#fff", border: "none", borderRadius: 12, padding: "14px", fontSize: 14, fontWeight: 700, cursor: loading ? "default" : "pointer", fontFamily: BODY, opacity: loading ? 0.7 : 1 }}
+              >
+                {loading ? "Actualizando…" : "Guardar nueva contraseña"}
+              </button>
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "16px 0" }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+              <p style={{ fontSize: 18, fontWeight: 700, color: "#0a0a0a", fontFamily: FONT, marginBottom: 8 }}>Contraseña actualizada</p>
+              <p style={{ fontSize: 14, color: "#666" }}>Tu contraseña ha sido actualizada correctamente. Redirigiendo al inicio de sesión…</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1562,8 +1762,12 @@ function TermsPage({ onBack }) {
 /* ─── ROOT ───────────────────────────────────────────────────────────────── */
 export default function App() {
   const path = window.location.pathname;
-  const [session, setSession] = useState(undefined); // undefined = cargando, null = sin sesión
+  const hash = window.location.hash;
+  const isPasswordRecovery = hash.includes("type=recovery");
+
+  const [session, setSession] = useState(undefined);
   const [view, setView] = useState(
+    isPasswordRecovery ? "reset" :
     path === "/privacy" ? "privacy" :
     path === "/terms"   ? "terms"   :
     "main"
@@ -1574,7 +1778,11 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s ?? null);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+      console.log("[Auth] Auth event:", event);
+      if (event === "PASSWORD_RECOVERY") {
+        setView("reset");
+      }
       setSession(s ?? null);
     });
     return () => subscription.unsubscribe();
@@ -1595,9 +1803,10 @@ export default function App() {
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
   `;
 
-  // Páginas públicas — siempre accesibles
+  // Páginas públicas y reset — accesibles sin sesión
   if (view === "privacy") return <><style>{styles}</style><PrivacyPage onBack={goHome} /></>;
   if (view === "terms")   return <><style>{styles}</style><TermsPage onBack={goHome} /></>;
+  if (view === "reset")   return <><style>{styles}</style><ResetPasswordPage onDone={() => { setView("main"); window.history.replaceState({}, "", "/"); }} /></>;
 
   // Cargando sesión
   if (session === undefined) {

@@ -68,13 +68,20 @@ const DEFAULT_RULES = [
 //    GET /auth/shopify?shop=mi-tienda.myshopify.com
 // ─────────────────────────────────────────────────────────────────────────────
 app.get("/auth/shopify", (req, res) => {
-  const { shop } = req.query;
+  const { shop, token } = req.query;
 
   if (!shop || !isValidShopDomain(shop)) {
     return res.status(400).json({ error: "Dominio de Shopify inválido" });
   }
 
-  const state = crypto.randomBytes(16).toString("hex");
+  // Embebemos el token de Supabase en el state para recuperarlo en el callback
+  // Shopify devuelve el state intacto al redirigir al callback
+  const nonce = crypto.randomBytes(8).toString("hex");
+  const statePayload = token
+    ? `${nonce}:${token}`   // "nonce:supabaseToken"
+    : nonce;
+  const state = Buffer.from(statePayload).toString("base64url");
+
   const scopes = "read_orders,read_customers";
   const redirectUri = `${process.env.APP_URL}/auth/shopify/callback`;
 
@@ -85,7 +92,7 @@ app.get("/auth/shopify", (req, res) => {
     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&state=${state}`;
 
-  console.log(`[OAuth] Iniciando flujo para tienda: ${shop}`);
+  console.log(`[OAuth] Iniciando flujo para tienda: ${shop} (token embed: ${!!token})`);
   res.redirect(authUrl);
 });
 
@@ -98,6 +105,19 @@ app.get("/auth/shopify/callback", async (req, res) => {
 
   if (!verifyShopifyHmac(req.query, process.env.SHOPIFY_CLIENT_SECRET)) {
     return res.status(401).json({ error: "HMAC inválido. Solicitud no autorizada." });
+  }
+
+  // Extraer el token de Supabase del state (si fue embebido)
+  let supabaseToken = null;
+  try {
+    const decoded = Buffer.from(state, "base64url").toString("utf8");
+    const colonIdx = decoded.indexOf(":");
+    if (colonIdx > -1) {
+      supabaseToken = decoded.slice(colonIdx + 1);
+      console.log("[OAuth] Token de Supabase extraído del state ✅");
+    }
+  } catch {
+    console.warn("[OAuth] No se pudo decodificar el state");
   }
 
   try {
@@ -127,10 +147,18 @@ app.get("/auth/shopify/callback", async (req, res) => {
     });
 
     // ── Persistimos en Supabase ───────────────────────────────────────────────
-    // Obtener user_id del header de autenticación si existe
-    const userId = await getUserIdFromHeader(req);
-    if (userId) {
-      console.log(`[OAuth] Vinculando tienda ${shop} al usuario ${userId}`);
+    // Verificar el token extraído del state para obtener el user_id
+    let userId = null;
+    if (supabaseToken) {
+      const { data, error: authError } = await supabase.auth.getUser(supabaseToken);
+      if (authError || !data?.user) {
+        console.warn(`[OAuth] Token de Supabase inválido o expirado: ${authError?.message}`);
+      } else {
+        userId = data.user.id;
+        console.log(`[OAuth] Vinculando tienda ${shop} al usuario ${userId}`);
+      }
+    } else {
+      console.warn(`[OAuth] Sin token de Supabase — tienda se guardará sin user_id`);
     }
 
     const upsertPayload = {
@@ -147,7 +175,7 @@ app.get("/auth/shopify/callback", async (req, res) => {
     if (dbError) {
       console.error(`[Supabase] ❌ Error guardando tienda ${shop}:`, dbError.message);
     } else {
-      console.log(`[Supabase] ✅ Tienda guardada/actualizada: ${shop}`);
+      console.log(`[Supabase] ✅ Tienda guardada/actualizada: ${shop} (user_id: ${userId ?? "sin usuario"})`);
     }
     // ─────────────────────────────────────────────────────────────────────────
 

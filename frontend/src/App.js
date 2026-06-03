@@ -27,6 +27,21 @@ const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
 const FONT = "'Instrument Serif', serif";
 const BODY = "'Outfit', sans-serif";
 
+/* ─── LOGO COMPONENT ───────────────────────────────────────────────────────── */
+const Logo = ({ height = 36, dark = false }) => (
+  <img
+    src={logo}
+    alt="ReviewPilot"
+    style={{
+      height,
+      width: "auto",
+      objectFit: "contain",
+      display: "block",
+      filter: dark ? "brightness(0) invert(1)" : "none",
+    }}
+  />
+);
+
 /* ─── Utilidades ─────────────────────────────────────────────────────────── */
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

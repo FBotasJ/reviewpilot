@@ -1225,7 +1225,12 @@ function AuthPage({ onAuth }) {
       });
       if (error) {
         console.log("RESET PASSWORD ERROR:", error);
-        setForgotError(`Error de Supabase: ${error.message}`);
+        const msg = error.message || "";
+        setForgotError(
+          msg.toLowerCase().includes("rate limit") || msg.toLowerCase().includes("too many")
+            ? "Has realizado demasiados intentos en poco tiempo. Espera unos minutos e inténtalo nuevamente."
+            : "No pudimos procesar tu solicitud. Verifica el correo e inténtalo nuevamente."
+        );
         setForgotLoading(false);
         return;
       }
@@ -1233,7 +1238,7 @@ function AuthPage({ onAuth }) {
       setForgotSuccess(true);
     } catch (err) {
       console.log("RESET PASSWORD ERROR:", err);
-      setForgotError(`Error inesperado: ${err.message}`);
+      setForgotError("No pudimos procesar tu solicitud. Verifica el correo e inténtalo nuevamente.");
     } finally {
       setForgotLoading(false);
     }

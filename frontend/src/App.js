@@ -1188,25 +1188,49 @@ function Dashboard({ onConnectMore, onLogout, userEmail }) {
 
 /* ─── AUTH — LOGIN & REGISTER ───────────────────────────────────────────── */
 function AuthPage({ onAuth }) {
-  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [focused, setFocused] = useState(null);
 
+  const switchMode = (m) => { setMode(m); setError(null); setSuccess(null); setConfirm(""); setShowPwd(false); setShowConfirm(false); };
+
   const inp = {
-    width: "100%", border: "1.5px solid #e5e7eb", borderRadius: 10,
+    flex: 1, border: "1.5px solid #e5e7eb", borderRadius: 10,
     padding: "12px 14px", fontSize: 14, fontFamily: BODY, outline: "none",
-    transition: "border-color 0.15s",
+    transition: "border-color 0.15s", background: "#fff",
   };
+
+  const eyeBtn = (show, toggle, field) => (
+    <button
+      type="button"
+      onClick={toggle}
+      tabIndex={-1}
+      style={{
+        position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+        background: "none", border: "none", cursor: "pointer", padding: 4,
+        color: focused === field ? "#0a0a0a" : "#bbb", fontSize: 16, lineHeight: 1,
+      }}
+      title={show ? "Ocultar contraseña" : "Mostrar contraseña"}
+    >
+      {show ? "🙈" : "👁"}
+    </button>
+  );
 
   const handleSubmit = async () => {
     setError(null);
     setSuccess(null);
     if (!email || !password) { setError("Completa todos los campos."); return; }
-    if (password.length < 6) { setError("La contraseña debe tener al menos 6 caracteres."); return; }
+    if (mode === "register") {
+      if (password.length < 8) { setError("La contraseña debe tener al menos 8 caracteres."); return; }
+      if (password !== confirm) { setError("Las contraseñas no coinciden."); return; }
+    }
     setLoading(true);
     try {
       if (mode === "login") {
@@ -1217,7 +1241,7 @@ function AuthPage({ onAuth }) {
         const { error: err } = await supabase.auth.signUp({ email, password });
         if (err) throw err;
         setSuccess("Cuenta creada. Revisa tu email para confirmar tu cuenta y luego inicia sesión.");
-        setMode("login");
+        switchMode("login");
       }
     } catch (err) {
       const msg = err.message || "Error desconocido";
@@ -1246,9 +1270,9 @@ function AuthPage({ onAuth }) {
         {/* Card */}
         <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 20, padding: "36px 40px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
           {/* Tabs */}
-          <div style={{ display: "flex", gap: 0, marginBottom: 28, background: "#f3f4f6", borderRadius: 10, padding: 4 }}>
+          <div style={{ display: "flex", marginBottom: 28, background: "#f3f4f6", borderRadius: 10, padding: 4 }}>
             {[["login", "Iniciar sesión"], ["register", "Crear cuenta"]].map(([m, label]) => (
-              <button key={m} onClick={() => { setMode(m); setError(null); setSuccess(null); }}
+              <button key={m} onClick={() => switchMode(m)}
                 style={{
                   flex: 1, padding: "8px 0", borderRadius: 8, border: "none",
                   background: mode === m ? "#fff" : "transparent",
@@ -1265,26 +1289,62 @@ function AuthPage({ onAuth }) {
 
           {/* Fields */}
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {/* Email */}
             <div>
               <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Email</label>
               <input
                 type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="tu@email.com"
-                style={{ ...inp, borderColor: focused === "email" ? "#0a0a0a" : "#e5e7eb" }}
+                style={{ ...inp, width: "100%", borderColor: focused === "email" ? "#0a0a0a" : "#e5e7eb" }}
                 onFocus={() => setFocused("email")} onBlur={() => setFocused(null)}
                 onKeyDown={e => e.key === "Enter" && handleSubmit()}
               />
             </div>
+
+            {/* Contraseña */}
             <div>
               <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Contraseña</label>
-              <input
-                type="password" value={password} onChange={e => setPassword(e.target.value)}
-                placeholder={mode === "register" ? "Mínimo 6 caracteres" : "••••••••"}
-                style={{ ...inp, borderColor: focused === "password" ? "#0a0a0a" : "#e5e7eb" }}
-                onFocus={() => setFocused("password")} onBlur={() => setFocused(null)}
-                onKeyDown={e => e.key === "Enter" && handleSubmit()}
-              />
+              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                <input
+                  type={showPwd ? "text" : "password"}
+                  value={password} onChange={e => setPassword(e.target.value)}
+                  placeholder={mode === "register" ? "Mínimo 8 caracteres" : "••••••••"}
+                  style={{ ...inp, width: "100%", paddingRight: 40, borderColor: focused === "password" ? "#0a0a0a" : "#e5e7eb" }}
+                  onFocus={() => setFocused("password")} onBlur={() => setFocused(null)}
+                  onKeyDown={e => e.key === "Enter" && handleSubmit()}
+                />
+                {eyeBtn(showPwd, () => setShowPwd(s => !s), "password")}
+              </div>
             </div>
+
+            {/* Confirmar contraseña — solo en registro */}
+            {mode === "register" && (
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: 0.5, display: "block", marginBottom: 6 }}>Confirmar contraseña</label>
+                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <input
+                    type={showConfirm ? "text" : "password"}
+                    value={confirm} onChange={e => setConfirm(e.target.value)}
+                    placeholder="Repite tu contraseña"
+                    style={{
+                      ...inp, width: "100%", paddingRight: 40,
+                      borderColor: confirm && confirm !== password ? "#f87171"
+                        : focused === "confirm" ? "#0a0a0a" : "#e5e7eb",
+                    }}
+                    onFocus={() => setFocused("confirm")} onBlur={() => setFocused(null)}
+                    onKeyDown={e => e.key === "Enter" && handleSubmit()}
+                  />
+                  {eyeBtn(showConfirm, () => setShowConfirm(s => !s), "confirm")}
+                </div>
+                {/* Indicador en tiempo real */}
+                {confirm && confirm !== password && (
+                  <p style={{ fontSize: 12, color: "#ef4444", marginTop: 4 }}>Las contraseñas no coinciden.</p>
+                )}
+                {confirm && confirm === password && (
+                  <p style={{ fontSize: 12, color: "#16a34a", marginTop: 4 }}>✓ Las contraseñas coinciden.</p>
+                )}
+              </div>
+            )}
 
             {/* Error / Success */}
             {error && (

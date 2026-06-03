@@ -1075,6 +1075,14 @@ app.post("/api/test/orders-fulfilled", async (req, res) => {
   });
 });
 
+// ENDPOINT TEMPORAL — obtener access token para registrar webhook manualmente
+// ELIMINAR después de registrar el webhook
+app.get("/api/dev/token/:shop", (req, res) => {
+  const store = stores.get(req.params.shop);
+  if (!store) return res.status(404).json({ error: "Tienda no encontrada en memoria. Reconecta primero." });
+  res.json({ shop: req.params.shop, token: store.accessToken });
+});
+
 // Health check
 app.get("/health", (req, res) => {
   res.json({

@@ -282,33 +282,99 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
 
       {/* PRICING */}
       <section className="rp-section-pad" style={{ padding: "90px 48px" }}>
-        <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center" }}>
-          <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontFamily: FONT, fontWeight: 400, marginBottom: 48, color: "#0a0a0a" }}>Simple y transparente</h2>
-          <div className="rp-pricing" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", textAlign: "center" }}>
+          <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontFamily: FONT, fontWeight: 700, marginBottom: 12, color: "#0a0a0a" }}>Planes simples y transparentes</h2>
+          <p style={{ fontSize: 16, color: "#666", marginBottom: 48 }}>Empieza gratis. Escala cuando lo necesites.</p>
+          <div className="rp-pricing" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, alignItems: "start" }}>
             {[
-              { name: "Starter", price: "$9", features: ["1 plataforma","500 envíos/mes","Email y SMS","2 reglas activas"], highlight: false },
-              { name: "Growth", price: "$29", features: ["5 plataformas","5,000 envíos/mes","Email, SMS y WhatsApp","Reglas ilimitadas","Mensajes con IA"], highlight: true },
-              { name: "Scale", price: "$79", features: ["Ilimitado todo","Analytics avanzado","Soporte prioritario","API access"], highlight: false },
+              {
+                name: "Free", price: "$0", per: "", btn: "Instalar gratis", highlight: false,
+                features: [
+                  "1 tienda",
+                  "25 solicitudes de reseña/mes",
+                  "Google Reviews",
+                  "Solicitudes por email",
+                  "Dashboard básico",
+                ],
+                aiNote: null,
+              },
+              {
+                name: "Starter", price: "$9", per: "/mes", btn: "Empezar", highlight: false,
+                features: [
+                  "1 tienda",
+                  "100 solicitudes de reseña/mes",
+                  "Google Reviews",
+                  "Solicitudes por email",
+                  "Programación automática",
+                  "Plantillas optimizadas con IA",
+                ],
+                aiNote: "IA que redacta solicitudes listas para enviar.",
+              },
+              {
+                name: "Growth", price: "$29", per: "/mes", btn: "Empezar", highlight: true,
+                features: [
+                  "Hasta 3 tiendas",
+                  "500 solicitudes de reseña/mes",
+                  "Google Reviews",
+                  "Solicitudes por email",
+                  "Programación automática",
+                  "IA para generar mensajes",
+                  "Dashboard de rendimiento",
+                  "Soporte prioritario",
+                ],
+                aiNote: "Genera automáticamente mensajes optimizados para conseguir más reseñas.",
+              },
+              {
+                name: "Scale", price: "$79", per: "/mes", btn: "Empezar", highlight: false,
+                features: [
+                  "Hasta 10 tiendas",
+                  "2,000 solicitudes de reseña/mes",
+                  "Google Reviews",
+                  "Solicitudes por email",
+                  "IA para generar mensajes",
+                  "Reglas avanzadas",
+                  "API y Webhooks",
+                  "Soporte prioritario",
+                ],
+                aiNote: "IA que redacta solicitudes listas para enviar.",
+              },
             ].map((p, i) => (
               <div key={i} style={{
                 background: p.highlight ? "#2563EB" : "#fff",
                 border: p.highlight ? "none" : "1px solid #ececec",
-                borderRadius: 20, padding: "30px 26px",
-                boxShadow: p.highlight ? "0 12px 40px rgba(37,99,235,0.25)" : "0 1px 4px rgba(0,0,0,0.04)",
+                borderRadius: 20, padding: "28px 22px",
+                boxShadow: p.highlight ? "0 16px 48px rgba(37,99,235,0.28)" : "0 1px 4px rgba(0,0,0,0.04)",
                 position: "relative",
+                textAlign: "left",
               }}>
-                {p.highlight && <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "#f59e0b", color: "#000", fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 99 }}>MÁS POPULAR</div>}
-                <div style={{ fontSize: 15, fontWeight: 700, color: p.highlight ? "#fff" : "#0a0a0a", marginBottom: 6 }}>{p.name}</div>
-                <div style={{ fontSize: 34, fontWeight: 700, fontFamily: FONT, color: p.highlight ? "#fff" : "#0a0a0a", marginBottom: 20 }}>{p.price}<span style={{ fontSize: 14, color: p.highlight ? "#888" : "#aaa", fontWeight: 400 }}>/mes</span></div>
+                {p.highlight && <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)", background: "#f59e0b", color: "#000", fontSize: 11, fontWeight: 700, padding: "4px 14px", borderRadius: 99, whiteSpace: "nowrap" }}>⭐ Más popular</div>}
+                <div style={{ fontSize: 13, fontWeight: 700, color: p.highlight ? "#93c5fd" : "#2563EB", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>{p.name}</div>
+                <div style={{ fontSize: 32, fontWeight: 700, fontFamily: FONT, color: p.highlight ? "#fff" : "#0a0a0a", marginBottom: 4, lineHeight: 1 }}>
+                  {p.price}<span style={{ fontSize: 13, color: p.highlight ? "#93c5fd" : "#aaa", fontWeight: 400 }}>{p.per}</span>
+                </div>
+                <div style={{ borderTop: p.highlight ? "1px solid rgba(255,255,255,0.15)" : "1px solid #f0f0f0", margin: "16px 0" }} />
                 {p.features.map((f, j) => (
-                  <div key={j} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 9, fontSize: 13, color: p.highlight ? "#ccc" : "#555" }}>
-                    <span style={{ color: "#22c55e" }}>✓</span>{f}
+                  <div key={j} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 9, fontSize: 13, color: p.highlight ? "#e0e7ff" : "#444", lineHeight: 1.4 }}>
+                    <span style={{ color: "#22c55e", flexShrink: 0, marginTop: 1 }}>✓</span>{f}
                   </div>
                 ))}
-                <Btn onClick={onGetStarted} variant={p.highlight ? "light" : "dark"} style={{ width: "100%", justifyContent: "center", marginTop: 20 }}>Empezar</Btn>
+                {p.aiNote && (
+                  <div style={{ background: p.highlight ? "rgba(255,255,255,0.12)" : "#EFF6FF", borderRadius: 10, padding: "10px 12px", marginTop: 14, fontSize: 12, color: p.highlight ? "#e0e7ff" : "#2563EB", lineHeight: 1.5 }}>
+                    🤖 {p.aiNote}
+                  </div>
+                )}
+                <Btn
+                  onClick={p.name === "Free" ? (onSignUp || onGetStarted) : (onSignUp || onGetStarted)}
+                  variant={p.highlight ? "light" : p.name === "Free" ? "ghost" : "dark"}
+                  style={{ width: "100%", justifyContent: "center", marginTop: 20 }}
+                >{p.btn}</Btn>
               </div>
             ))}
           </div>
+          <p style={{ marginTop: 32, fontSize: 13, color: "#aaa" }}>
+            ¿Necesitas más volumen?{" "}
+            <a href="mailto:support@reviewpilot.company" style={{ color: "#2563EB", textDecoration: "none", fontWeight: 500 }}>Contáctanos.</a>
+          </p>
         </div>
       </section>
 

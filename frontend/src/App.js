@@ -24,10 +24,13 @@ async function authFetch(url, opts = {}) {
 // Lee la URL del servidor desde variable de entorno
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:3001";
 
-const FONT = "'Instrument Serif', serif";
-const BODY = "'Outfit', sans-serif";
+const BRAND = "#2563EB";
+const BRAND_DARK = "#1d4ed8";
+const FONT = "'Inter', sans-serif";
+const BODY = "'Inter', sans-serif";
 
-/* ─── LOGO COMPONENT ───────────────────────────────────────────────────────── */
+
+/* ─── LOGO COMPONENT ─────────────────────────────────────────────────────── */
 const Logo = ({ height = 36, dark = false }) => (
   <img
     src={logo}
@@ -48,9 +51,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function Btn({ children, onClick, variant = "dark", size = "md", style: s = {}, disabled }) {
   const sizes = { sm: { padding: "8px 18px", fontSize: 13 }, md: { padding: "12px 24px", fontSize: 14 }, lg: { padding: "16px 36px", fontSize: 16 } };
   const variants = {
-    dark: { background: "#0a0a0a", color: "#fff", border: "none" },
+    dark: { background: BRAND, color: "#fff", border: "none" },
     light: { background: "#fff", color: "#0a0a0a", border: "1.5px solid #e0e0e0" },
-    ghost: { background: "transparent", color: "#0a0a0a", border: "1.5px solid #0a0a0a" },
+    ghost: { background: "transparent", color: BRAND, border: `1.5px solid ${BRAND}` },
   };
   return (
     <button
@@ -103,7 +106,7 @@ function LandingPage({ onGetStarted, onPrivacy, onTerms, onContact }) {
       {/* HERO */}
       <section style={{ padding: "100px 48px 80px", textAlign: "center", maxWidth: 860, margin: "0 auto" }}>
         <div style={{ marginBottom: 20 }}>
-          <span style={{ background: "#0a0a0a", color: "#fff", borderRadius: 99, padding: "5px 14px", fontSize: 12, fontWeight: 600 }}>
+          <span style={{ background: "#EFF6FF", color: "#2563EB", borderRadius: 99, padding: "5px 14px", fontSize: 12, fontWeight: 600 }}>
             ✨ Mensajes generados con IA
           </span>
         </div>
@@ -127,12 +130,12 @@ function LandingPage({ onGetStarted, onPrivacy, onTerms, onContact }) {
           animation: "float 4s ease-in-out infinite",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#0a0a0a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>📦</div>
+            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#2563EB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>📦</div>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#0a0a0a" }}>Pedido entregado · Carlos M.</div>
               <div style={{ fontSize: 11, color: "#aaa" }}>hace 2 minutos</div>
             </div>
-            <span style={{ marginLeft: "auto", background: "#0a0a0a", color: "#fff", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>✓ Enviado</span>
+            <span style={{ marginLeft: "auto", background: "#2563EB", color: "#fff", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>✓ Enviado</span>
           </div>
           <div style={{ background: "#f9f9f9", borderRadius: 10, padding: "12px 14px", fontSize: 13, color: "#444", lineHeight: 1.6 }}>
             "Hola Carlos, tu pedido llegó 🎉 ¿Qué te pareció? Una reseña en Google nos ayuda un montón."
@@ -201,10 +204,10 @@ function LandingPage({ onGetStarted, onPrivacy, onTerms, onContact }) {
               { name: "Scale", price: "$79", features: ["Ilimitado todo","Analytics avanzado","Soporte prioritario","API access"], highlight: false },
             ].map((p, i) => (
               <div key={i} style={{
-                background: p.highlight ? "#0a0a0a" : "#fff",
+                background: p.highlight ? "#2563EB" : "#fff",
                 border: p.highlight ? "none" : "1px solid #ececec",
                 borderRadius: 20, padding: "30px 26px",
-                boxShadow: p.highlight ? "0 12px 40px rgba(0,0,0,0.15)" : "0 1px 4px rgba(0,0,0,0.04)",
+                boxShadow: p.highlight ? "0 12px 40px rgba(37,99,235,0.25)" : "0 1px 4px rgba(0,0,0,0.04)",
                 position: "relative",
               }}>
                 {p.highlight && <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "#f59e0b", color: "#000", fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 99 }}>MÁS POPULAR</div>}
@@ -223,38 +226,39 @@ function LandingPage({ onGetStarted, onPrivacy, onTerms, onContact }) {
       </section>
 
       {/* CTA FINAL */}
-      <section style={{ padding: "90px 48px", textAlign: "center", background: "#0a0a0a" }}>
+      <section style={{ padding: "90px 48px", textAlign: "center", background: "#1e3a8a" }}>
         <h2 style={{ fontSize: 48, fontFamily: FONT, fontWeight: 400, color: "#fff", lineHeight: 1.15, marginBottom: 20 }}>
           Tu próxima reseña<br /><em style={{ color: "#888" }}>ya está en camino.</em>
         </h2>
         <Btn onClick={onGetStarted} size="lg" variant="light">Crear cuenta gratis →</Btn>
       </section>
 
-      <footer style={{ borderTop: "1px solid #222", padding: "28px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0a0a0a", flexWrap: "wrap", gap: 12 }}>
+      <footer style={{ borderTop: "1px solid #1e3a8a", padding: "28px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#1e3a8a", flexWrap: "wrap", gap: 12 }}>
+        <Logo height={28} dark={true} />
         <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
           <span
             onClick={onPrivacy}
             style={{ fontSize: 13, color: "#888", cursor: "pointer", fontFamily: BODY }}
-            onMouseEnter={e => e.target.style.color = "#fff"}
+            onMouseEnter={e => e.target.style.color = "#93c5fd"}
             onMouseLeave={e => e.target.style.color = "#888"}
           >Política de Privacidad</span>
           <span style={{ color: "#333", fontSize: 12 }}>|</span>
           <span
             onClick={onTerms}
             style={{ fontSize: 13, color: "#888", cursor: "pointer", fontFamily: BODY }}
-            onMouseEnter={e => e.target.style.color = "#fff"}
+            onMouseEnter={e => e.target.style.color = "#93c5fd"}
             onMouseLeave={e => e.target.style.color = "#888"}
           >Términos de Servicio</span>
           <span style={{ color: "#333", fontSize: 12 }}>|</span>
           <span
             onClick={onContact}
             style={{ fontSize: 13, color: "#888", cursor: "pointer", fontFamily: BODY }}
-            onMouseEnter={e => e.target.style.color = "#fff"}
+            onMouseEnter={e => e.target.style.color = "#93c5fd"}
             onMouseLeave={e => e.target.style.color = "#888"}
           >Contacto</span>
           <span style={{ color: "#333", fontSize: 12 }}>|</span>
           <a href="mailto:support@reviewpilot.company" style={{ fontSize: 13, color: "#888", textDecoration: "none", fontFamily: BODY }}
-            onMouseEnter={e => e.target.style.color = "#fff"}
+            onMouseEnter={e => e.target.style.color = "#93c5fd"}
             onMouseLeave={e => e.target.style.color = "#888"}
           >support@reviewpilot.company</a>
           <span style={{ fontSize: 12, color: "#333" }}>© 2026 ReviewPilot</span>
@@ -333,11 +337,11 @@ function ShopifyConnect({ onBack, onDone, session }) {
     return (
       <div>
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div style={{ width: 44, height: 44, border: "3px solid #e5e7eb", borderTopColor: "#0a0a0a", borderRadius: "50%", margin: "0 auto 14px", animation: "spin 0.8s linear infinite" }} />
+          <div style={{ width: 44, height: 44, border: "3px solid #e5e7eb", borderTopColor: "#2563EB", borderRadius: "50%", margin: "0 auto 14px", animation: "spin 0.8s linear infinite" }} />
           <h2 style={{ fontSize: 22, fontFamily: FONT, fontWeight: 400 }}>Conectando tu tienda…</h2>
           <p style={{ fontSize: 13, color: "#aaa" }}>{shopInput}.myshopify.com</p>
         </div>
-        <div style={{ background: "#0a0a0a", borderRadius: 12, padding: "16px 18px", fontFamily: "monospace", fontSize: 12, lineHeight: 1.9, maxHeight: 220, overflowY: "auto" }}>
+        <div style={{ background: "#0f172a", borderRadius: 12, padding: "16px 18px", fontFamily: "monospace", fontSize: 12, lineHeight: 1.9, maxHeight: 220, overflowY: "auto" }}>
           {log.map((l, i) => (
             <div key={i} style={{ color: l.type === "success" ? "#4ade80" : l.type === "done" ? "#facc15" : "#aaa" }}>
               <span style={{ color: "#444" }}>&gt; </span>{l.msg}
@@ -360,7 +364,7 @@ function ShopifyConnect({ onBack, onDone, session }) {
 
       <div style={{
         display: "flex", alignItems: "center",
-        border: focused ? "2px solid #0a0a0a" : "1.5px solid #e0e0e0",
+        border: focused ? "2px solid #2563EB" : "1.5px solid #e0e0e0",
         borderRadius: 12, overflow: "hidden", background: "#fff", marginBottom: 10, transition: "border 0.15s",
       }}>
         <span style={{ padding: "0 14px", fontSize: 13, color: "#bbb", whiteSpace: "nowrap" }}>https://</span>
@@ -653,14 +657,14 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
               onChange={e => { setGoogleUrl(e.target.value); setGoogleUrlSaved(false); }}
               placeholder="https://g.page/r/tu-enlace-de-google-reviews"
               style={{ ...inp, flex: 1 }}
-              onFocus={e => e.target.style.borderColor = "#0a0a0a"}
+              onFocus={e => e.target.style.borderColor = "#2563EB"}
               onBlur={e => e.target.style.borderColor = "#e5e7eb"}
             />
             <button
               onClick={saveGoogleUrl}
               disabled={googleUrlSaving}
               style={{
-                background: googleUrlSaved ? "#16a34a" : "#0a0a0a",
+                background: googleUrlSaved ? "#16a34a" : "#2563EB",
                 color: "#fff", border: "none", borderRadius: 10,
                 padding: "10px 18px", fontSize: 13, fontWeight: 600,
                 cursor: googleUrlSaving ? "default" : "pointer",
@@ -744,7 +748,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
                             display: "flex", alignItems: "center", gap: 6,
                             transition: "all 0.15s",
                           }}
-                          onMouseEnter={e => { e.currentTarget.style.borderColor = "#0a0a0a"; e.currentTarget.style.color = "#0a0a0a"; }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = "#2563EB"; e.currentTarget.style.color = "#2563EB"; }}
                           onMouseLeave={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#555"; }}
                         >
                           🤖 Vista previa con IA
@@ -765,7 +769,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
                             transition: "all 0.15s",
                             opacity: t?.loading ? 0.6 : 1,
                           }}
-                          onMouseEnter={e => { if (!t?.loading && !t?.sent) { e.currentTarget.style.borderColor = "#0a0a0a"; e.currentTarget.style.color = "#0a0a0a"; }}}
+                          onMouseEnter={e => { if (!t?.loading && !t?.sent) { e.currentTarget.style.borderColor = "#2563EB"; e.currentTarget.style.color = "#2563EB"; }}}
                           onMouseLeave={e => { if (!t?.loading && !t?.sent) { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#555"; }}}
                         >
                           {t?.loading ? (
@@ -859,7 +863,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
                       value={editing.delay_days}
                       onChange={e => setEditing(prev => ({ ...prev, delay_days: e.target.value }))}
                       style={inp}
-                      onFocus={e => e.target.style.borderColor = "#0a0a0a"}
+                      onFocus={e => e.target.style.borderColor = "#2563EB"}
                       onBlur={e => e.target.style.borderColor = "#e5e7eb"}
                     />
                   </div>
@@ -885,7 +889,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
                       onChange={e => setEditing(prev => ({ ...prev, prompt: e.target.value }))}
                       placeholder="Ej: Escribe un mensaje cálido y breve para pedirle una reseña al cliente..."
                       style={{ ...inp, resize: "vertical", lineHeight: 1.6 }}
-                      onFocus={e => e.target.style.borderColor = "#0a0a0a"}
+                      onFocus={e => e.target.style.borderColor = "#2563EB"}
                       onBlur={e => e.target.style.borderColor = "#e5e7eb"}
                     />
                   </div>
@@ -962,7 +966,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               marginBottom: 16, transition: "all 0.15s",
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = "#0a0a0a"; e.currentTarget.style.color = "#0a0a0a"; }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = "#2563EB"; e.currentTarget.style.color = "#2563EB"; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = "#d1d5db"; e.currentTarget.style.color = "#6b7280"; }}
           >
             + Crear solicitud
@@ -971,7 +975,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
 
         {/* Formulario de nueva automatización */}
         {creating && (
-          <div style={{ background: "#fff", border: "1.5px solid #0a0a0a", borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", marginBottom: 16 }}>
+          <div style={{ background: "#fff", border: "1.5px solid #2563EB", borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 16px rgba(0,0,0,0.08)", marginBottom: 16 }}>
             <div style={{ padding: "18px 26px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a" }}>Crear solicitud de reseña</div>
@@ -997,7 +1001,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
                   value={newRule.delay_days}
                   onChange={e => setNewRule(prev => ({ ...prev, delay_days: e.target.value }))}
                   style={inp}
-                  onFocus={e => e.target.style.borderColor = "#0a0a0a"}
+                  onFocus={e => e.target.style.borderColor = "#2563EB"}
                   onBlur={e => e.target.style.borderColor = "#e5e7eb"}
                 />
               </div>
@@ -1025,7 +1029,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
                   onChange={e => setNewRule(prev => ({ ...prev, prompt: e.target.value }))}
                   placeholder="Ej: Escribe un mensaje cálido y breve para pedirle una reseña al cliente..."
                   style={{ ...inp, resize: "vertical", lineHeight: 1.6 }}
-                  onFocus={e => e.target.style.borderColor = "#0a0a0a"}
+                  onFocus={e => e.target.style.borderColor = "#2563EB"}
                   onBlur={e => e.target.style.borderColor = "#e5e7eb"}
                 />
               </div>
@@ -1117,7 +1121,7 @@ function Dashboard({ onConnectMore, onLogout, userEmail }) {
             <button
               onClick={onLogout}
               style={{ fontSize: 13, color: "#888", background: "none", border: "none", cursor: "pointer", fontFamily: BODY, padding: 0 }}
-              onMouseEnter={e => e.target.style.color = "#0a0a0a"}
+              onMouseEnter={e => e.target.style.color = "#2563EB"}
               onMouseLeave={e => e.target.style.color = "#888"}
             >Cerrar sesión</button>
           )}
@@ -1131,7 +1135,7 @@ function Dashboard({ onConnectMore, onLogout, userEmail }) {
         {/* Loading */}
         {loading && (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
-            <div style={{ width: 32, height: 32, border: "3px solid #e5e7eb", borderTopColor: "#0a0a0a", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
+            <div style={{ width: 32, height: 32, border: "3px solid #e5e7eb", borderTopColor: "#2563EB", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
             <p style={{ fontSize: 14, color: "#aaa" }}>Cargando tiendas desde Supabase…</p>
           </div>
         )}
@@ -1335,7 +1339,7 @@ function AuthPage({ onAuth }) {
 
   return (
     <div style={{ minHeight: "100vh", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: BODY }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
       <div style={{ width: "100%", maxWidth: 440 }}>
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
@@ -1373,7 +1377,7 @@ function AuthPage({ onAuth }) {
               <input
                 type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="tu@email.com"
-                style={{ ...inp, width: "100%", borderColor: focused === "email" ? "#0a0a0a" : "#e5e7eb" }}
+                style={{ ...inp, width: "100%", borderColor: focused === "email" ? "#2563EB" : "#e5e7eb" }}
                 onFocus={() => setFocused("email")} onBlur={() => setFocused(null)}
                 onKeyDown={e => e.key === "Enter" && handleSubmit()}
               />
@@ -1387,7 +1391,7 @@ function AuthPage({ onAuth }) {
                   type={showPwd ? "text" : "password"}
                   value={password} onChange={e => setPassword(e.target.value)}
                   placeholder={mode === "register" ? "Mínimo 8 caracteres" : "••••••••"}
-                  style={{ ...inp, width: "100%", paddingRight: 40, borderColor: focused === "password" ? "#0a0a0a" : "#e5e7eb" }}
+                  style={{ ...inp, width: "100%", paddingRight: 40, borderColor: focused === "password" ? "#2563EB" : "#e5e7eb" }}
                   onFocus={() => setFocused("password")} onBlur={() => setFocused(null)}
                   onKeyDown={e => e.key === "Enter" && handleSubmit()}
                 />
@@ -1407,7 +1411,7 @@ function AuthPage({ onAuth }) {
                     style={{
                       ...inp, width: "100%", paddingRight: 40,
                       borderColor: confirm && confirm !== password ? "#f87171"
-                        : focused === "confirm" ? "#0a0a0a" : "#e5e7eb",
+                        : focused === "confirm" ? "#2563EB" : "#e5e7eb",
                     }}
                     onFocus={() => setFocused("confirm")} onBlur={() => setFocused(null)}
                     onKeyDown={e => e.key === "Enter" && handleSubmit()}
@@ -1441,7 +1445,7 @@ function AuthPage({ onAuth }) {
               onClick={handleSubmit}
               disabled={loading}
               style={{
-                background: "#0a0a0a", color: "#fff", border: "none",
+                background: "#2563EB", color: "#fff", border: "none",
                 borderRadius: 12, padding: "14px", fontSize: 14, fontWeight: 700,
                 cursor: loading ? "default" : "pointer", fontFamily: BODY,
                 opacity: loading ? 0.7 : 1, marginTop: 4,
@@ -1484,7 +1488,7 @@ function AuthPage({ onAuth }) {
                     <div style={{ display: "flex", gap: 8 }}>
                       <button
                         onClick={sendForgot} disabled={forgotLoading}
-                        style={{ flex: 1, background: "#0a0a0a", color: "#fff", border: "none", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 700, cursor: forgotLoading ? "default" : "pointer", fontFamily: BODY, opacity: forgotLoading ? 0.7 : 1 }}
+                        style={{ flex: 1, background: "#2563EB", color: "#fff", border: "none", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 700, cursor: forgotLoading ? "default" : "pointer", fontFamily: BODY, opacity: forgotLoading ? 0.7 : 1 }}
                       >
                         {forgotLoading ? "Enviando…" : "Enviar enlace"}
                       </button>
@@ -1561,7 +1565,7 @@ function ResetPasswordPage({ onDone }) {
 
   return (
     <div style={{ minHeight: "100vh", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: BODY }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
       <div style={{ width: "100%", maxWidth: 440 }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <Logo height={40} />
@@ -1617,7 +1621,7 @@ function ResetPasswordPage({ onDone }) {
 
               <button
                 onClick={handleReset} disabled={loading}
-                style={{ background: "#0a0a0a", color: "#fff", border: "none", borderRadius: 12, padding: "14px", fontSize: 14, fontWeight: 700, cursor: loading ? "default" : "pointer", fontFamily: BODY, opacity: loading ? 0.7 : 1 }}
+                style={{ background: "#2563EB", color: "#fff", border: "none", borderRadius: 12, padding: "14px", fontSize: 14, fontWeight: 700, cursor: loading ? "default" : "pointer", fontFamily: BODY, opacity: loading ? 0.7 : 1 }}
               >
                 {loading ? "Actualizando…" : "Guardar nueva contraseña"}
               </button>
@@ -1672,10 +1676,10 @@ function ContactPage({ onBack }) {
 function LegalPage({ title, children, onBack }) {
   return (
     <div style={{ minHeight: "100vh", background: "#fafafa", fontFamily: BODY }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
       {/* Nav */}
       <nav style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 48px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Logo height={34} />
+        <span onClick={onBack} style={{ cursor: "pointer" }}><Logo height={32} /></span>
         <Btn onClick={onBack} variant="light" size="sm">← Inicio</Btn>
       </nav>
       {/* Content */}
@@ -1686,7 +1690,7 @@ function LegalPage({ title, children, onBack }) {
       </div>
       {/* Footer */}
       <footer style={{ borderTop: "1px solid #ececec", padding: "24px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", flexWrap: "wrap", gap: 12 }}>
-        <Logo height={30} />
+        <Logo height={28} />
         <div style={{ display: "flex", gap: 16, fontSize: 13, color: "#888", flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ cursor: "pointer" }} onClick={() => window.location.assign("/privacy")}>Política de Privacidad</span>
           <span style={{ color: "#ccc" }}>|</span>
@@ -1878,7 +1882,7 @@ export default function App() {
   const goHome = () => { setView("main"); window.history.pushState({}, "", "/"); };
 
   const styles = `
-    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     * { box-sizing: border-box; margin: 0; padding: 0; }
     @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
     @keyframes spin { to{transform:rotate(360deg)} }
@@ -1896,7 +1900,7 @@ export default function App() {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fafafa" }}>
         <style>{styles}</style>
-        <div style={{ width: 36, height: 36, border: "3px solid #e5e7eb", borderTopColor: "#0a0a0a", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <div style={{ width: 36, height: 36, border: "3px solid #e5e7eb", borderTopColor: "#2563EB", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       </div>
     );
   }

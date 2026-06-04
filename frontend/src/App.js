@@ -240,8 +240,7 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
         <Btn onClick={onSignUp || onGetStarted} size="lg" variant="light">Crear cuenta gratis →</Btn>
       </section>
 
-      <footer className="rp-footer" style={{ borderTop: "1px solid #1e3a8a", padding: "28px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#1e3a8a", flexWrap: "wrap", gap: 12 }}>
-        <Logo height={28} dark={true} />
+      <footer className="rp-footer" style={{ borderTop: "1px solid #1e3a8a", padding: "28px 48px", display: "flex", justifyContent: "center", alignItems: "center", background: "#1e3a8a", flexWrap: "wrap", gap: 12 }}>
         <div className="rp-footer-links" style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
           <span
             onClick={onPrivacy}

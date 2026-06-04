@@ -181,22 +181,102 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
         </div>
       </section>
 
-      {/* TESTIMONIALS */}
-      <section className="rp-section-pad" style={{ padding: "80px 48px", background: "#f5f5f5" }}>
-        <div style={{ maxWidth: 960, margin: "0 auto" }}>
-          <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontFamily: FONT, fontWeight: 400, textAlign: "center", marginBottom: 48, color: "#0a0a0a" }}>
-            Lo que dicen <em>quienes ya lo usan</em>
-          </h2>
-          <div className="rp-testi" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
-            {testimonials.map((t, i) => (
-              <div key={i} style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 18, padding: "26px 22px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-                <div style={{ color: "#f59e0b", fontSize: 14, marginBottom: 12 }}>{"★".repeat(t.stars)}</div>
-                <p style={{ fontSize: 14, color: "#444", lineHeight: 1.75, marginBottom: 18 }}>"{t.text}"</p>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#0a0a0a" }}>{t.name}</div>
-                <div style={{ fontSize: 12, color: "#aaa" }}>{t.role}</div>
-              </div>
-            ))}
+      {/* ASÍ FUNCIONA */}
+      <section style={{ padding: "96px 24px", background: "#f8faff" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          {/* Header */}
+          <div style={{ textAlign: "center", marginBottom: 72 }}>
+            <h2 style={{ fontSize: "clamp(26px,4vw,42px)", fontFamily: FONT, fontWeight: 700, color: "#0a0a0a", marginBottom: 16 }}>
+              Así funciona ReviewPilot
+            </h2>
+            <p style={{ fontSize: 17, color: "#555", lineHeight: 1.7, maxWidth: 580, margin: "0 auto" }}>
+              Conecta tu tienda Shopify, configura Google Reviews y comienza a generar más reseñas automáticamente después de cada compra.
+            </p>
           </div>
+
+          {/* Steps */}
+          {[
+            {
+              n: "01",
+              title: "Conecta tu tienda Shopify",
+              desc: "Conecta tu tienda mediante OAuth seguro. No necesitas conocimientos técnicos y la configuración toma menos de un minuto.",
+              img: "/screenshots/conecta-shopify.png",
+              alt: "Conecta tu tienda Shopify",
+              reverse: false,
+            },
+            {
+              n: "02",
+              title: "Administra tus tiendas",
+              desc: "Visualiza todas tus tiendas conectadas y consulta el estado de las automatizaciones activas desde un solo lugar.",
+              img: "/screenshots/panel-resenas.png",
+              alt: "Panel de reseñas",
+              reverse: true,
+            },
+            {
+              n: "03",
+              title: "Configura tus solicitudes de reseña",
+              desc: "Define cuándo enviar solicitudes, cuánto esperar después de la compra y qué mensaje utilizar para solicitar una reseña.",
+              img: "/screenshots/creacion-solicitud.png",
+              alt: "Creación de solicitud",
+              reverse: false,
+            },
+            {
+              n: "04",
+              title: "Mide tus resultados",
+              desc: "Consulta solicitudes enviadas, clics, reseñas obtenidas y métricas de rendimiento desde tu panel de control.",
+              img: "/screenshots/dashboard-principal.png",
+              alt: "Dashboard principal",
+              reverse: true,
+            },
+          ].map((step, i) => (
+            <div
+              key={i}
+              className="rp-step-row"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 56,
+                marginBottom: i < 3 ? 80 : 0,
+                flexDirection: step.reverse ? "row-reverse" : "row",
+              }}
+            >
+              {/* Image */}
+              <div
+                style={{
+                  flex: "0 0 52%",
+                  borderRadius: 20,
+                  overflow: "hidden",
+                  boxShadow: "0 8px 40px rgba(37,99,235,0.10), 0 2px 8px rgba(0,0,0,0.06)",
+                  border: "1px solid #e8edf5",
+                  background: "#fff",
+                  transition: "box-shadow 0.25s, transform 0.25s",
+                  maxHeight: step.n === "04" ? 520 : "none",
+                  overflowY: step.n === "04" ? "auto" : "visible",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 16px 56px rgba(37,99,235,0.18), 0 4px 12px rgba(0,0,0,0.08)"; e.currentTarget.style.transform = "translateY(-3px)"; }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 8px 40px rgba(37,99,235,0.10), 0 2px 8px rgba(0,0,0,0.06)"; e.currentTarget.style.transform = "translateY(0)"; }}
+              >
+                <img
+                  src={step.img}
+                  alt={step.alt}
+                  style={{ width: "100%", display: "block", objectFit: "contain" }}
+                />
+              </div>
+
+              {/* Text */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#2563EB", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>
+                  Paso {step.n}
+                </div>
+                <h3 style={{ fontSize: "clamp(22px,3vw,32px)", fontWeight: 700, color: "#0a0a0a", marginBottom: 16, lineHeight: 1.2, fontFamily: FONT }}>
+                  {step.title}
+                </h3>
+                <p style={{ fontSize: 16, color: "#555", lineHeight: 1.75 }}>
+                  {step.desc}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -2017,6 +2097,8 @@ export default function App() {
       .rp-mobile-status { display: flex !important; align-items: center !important; }
       .rp-meta-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
       .rp-perf-grid { grid-template-columns: repeat(2,1fr) !important; }
+      .rp-step-row { flex-direction: column !important; gap: 28px !important; }
+      .rp-step-row > div:first-child { flex: none !important; width: 100% !important; max-height: none !important; }
       .rp-section-pad { padding-left: 20px !important; padding-right: 20px !important; }
       .rp-mobile-status { display: none !important; }
       .rp-cta-section { padding: 60px 20px !important; }

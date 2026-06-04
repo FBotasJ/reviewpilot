@@ -114,20 +114,20 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
       <section className="rp-hero" style={{ padding: "100px 48px 80px", textAlign: "center", maxWidth: 860, margin: "0 auto" }}>
         <div style={{ marginBottom: 20 }}>
           <span style={{ background: "#EFF6FF", color: "#2563EB", borderRadius: 99, padding: "5px 14px", fontSize: 12, fontWeight: 600 }}>
-            ✨ Mensajes generados con IA
+            ✨ Automatización con IA para Shopify
           </span>
         </div>
-        <h1 style={{ fontSize: "clamp(28px,6vw,68px)", lineHeight: 1.1, fontFamily: FONT, color: "#0a0a0a", marginBottom: 24, fontWeight: 400 }}>
-          Más reseñas,<br /><em style={{ color: "#666" }}>sin pedirlas tú.</em>
+        <h1 style={{ fontSize: "clamp(26px,5vw,56px)", lineHeight: 1.15, fontFamily: FONT, color: "#0a0a0a", marginBottom: 24, fontWeight: 700 }}>
+          Obtén más reseñas de Google<br />automáticamente después de cada compra
         </h1>
-        <p style={{ fontSize: 18, color: "#666", lineHeight: 1.7, maxWidth: 540, margin: "0 auto 40px" }}>
-          Conecta tu tienda y envía solicitudes automáticas justo cuando el cliente está más satisfecho.
+        <p style={{ fontSize: 18, color: "#555", lineHeight: 1.75, maxWidth: 600, margin: "0 auto 40px" }}>
+          ReviewPilot envía solicitudes de reseña por email cuando un pedido se marca como entregado, ayudándote a generar más reseñas, fortalecer la confianza y aumentar la credibilidad de tu negocio.
         </p>
         <div className="rp-hero-btns" style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          <Btn onClick={onGetStarted} size="lg">Conectar mi tienda →</Btn>
-          <Btn variant="light" size="lg" onClick={onSignUp || onGetStarted}>Crear cuenta gratis</Btn>
+          <Btn onClick={onSignUp || onGetStarted} size="lg">Crear cuenta gratis →</Btn>
+          <Btn variant="light" size="lg" onClick={() => { const el = document.getElementById("como-funciona"); if (el) el.scrollIntoView({ behavior: "smooth" }); }}>Ver demo</Btn>
         </div>
-        <p style={{ marginTop: 16, fontSize: 13, color: "#bbb" }}>Sin tarjeta · 14 días gratis · Cancela cuando quieras</p>
+        <p style={{ marginTop: 16, fontSize: 13, color: "#bbb" }}>Sin tarjeta · Configuración en minutos · Cancela cuando quieras</p>
 
         {/* Floating preview card */}
         <div style={{
@@ -166,7 +166,7 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
       </section>
 
       {/* HOW IT WORKS */}
-      <section className="rp-section-pad" style={{ padding: "90px 48px", maxWidth: 960, margin: "0 auto" }}>
+      <section id="como-funciona" className="rp-section-pad" style={{ padding: "90px 48px", maxWidth: 960, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <h2 style={{ fontSize: "clamp(28px,4vw,40px)", fontFamily: FONT, fontWeight: 400, color: "#0a0a0a" }}>De cero a reseñas<br /><em>en 10 minutos</em></h2>
         </div>

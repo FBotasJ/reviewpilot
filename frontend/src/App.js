@@ -133,7 +133,19 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
       }}>
         <Logo height={38} />
         <div className="rp-nav-links" style={{ display: "flex", gap: 32, fontSize: 14, color: "#777" }}>
-          {["Producto", "Precios", "Docs"].map(l => <span key={l} style={{ cursor: "pointer" }}>{l}</span>)}
+          {[
+            { label: "Producto", id: "producto" },
+            { label: "Precios",  id: "precios"  },
+            { label: "FAQ",      id: "faq"       },
+          ].map(({ label, id }) => (
+            <span
+              key={id}
+              onClick={() => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: "smooth" }); }}
+              style={{ cursor: "pointer", transition: "color 0.2s" }}
+              onMouseEnter={e => e.target.style.color = "#2563EB"}
+              onMouseLeave={e => e.target.style.color = "#777"}
+            >{label}</span>
+          ))}
         </div>
         <Btn onClick={onGetStarted} size="sm">Empezar gratis →</Btn>
       </nav>
@@ -194,7 +206,7 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
       </section>
 
       {/* HOW IT WORKS */}
-      <section id="como-funciona" className="rp-section-pad" style={{ padding: "90px 48px", maxWidth: 960, margin: "0 auto" }}>
+      <section id="producto" className="rp-section-pad" style={{ padding: "90px 48px", maxWidth: 960, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           <h2 style={{ fontSize: "clamp(28px,4vw,40px)", fontFamily: FONT, fontWeight: 400, color: "#0a0a0a" }}>De cero a reseñas<br /><em>en 10 minutos</em></h2>
         </div>
@@ -309,7 +321,7 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
       </section>
 
       {/* PRICING */}
-      <section className="rp-section-pad" style={{ padding: "90px 48px" }}>
+      <section id="precios" className="rp-section-pad" style={{ padding: "90px 48px" }}>
         <div style={{ maxWidth: 960, margin: "0 auto", textAlign: "center" }}>
           <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontFamily: FONT, fontWeight: 700, marginBottom: 12, color: "#0a0a0a" }}>Planes simples y transparentes</h2>
           <p style={{ fontSize: 16, color: "#666", marginBottom: 48 }}>Empieza gratis. Escala cuando lo necesites.</p>

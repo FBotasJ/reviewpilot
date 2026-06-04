@@ -79,7 +79,7 @@ function Btn({ children, onClick, variant = "dark", size = "md", style: s = {}, 
 }
 
 /* ─── LANDING PAGE ───────────────────────────────────────────────────────── */
-function LandingPage({ onGetStarted, onPrivacy, onTerms, onContact }) {
+function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) {
   const steps = [
     { n: "01", title: "Conecta tu tienda", desc: "Shopify, WooCommerce, Airbnb o Stripe. Un clic y listo." },
     { n: "02", title: "Elige el disparador", desc: "Pedido entregado, check-out, onboarding completado…" },
@@ -125,7 +125,7 @@ function LandingPage({ onGetStarted, onPrivacy, onTerms, onContact }) {
         </p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <Btn onClick={onGetStarted} size="lg">Conectar mi tienda →</Btn>
-          <Btn variant="light" size="lg">Ver demo</Btn>
+          <Btn variant="light" size="lg" onClick={onSignUp || onGetStarted}>Crear cuenta gratis</Btn>
         </div>
         <p style={{ marginTop: 16, fontSize: 13, color: "#bbb" }}>Sin tarjeta · 14 días gratis · Cancela cuando quieras</p>
 
@@ -237,7 +237,7 @@ function LandingPage({ onGetStarted, onPrivacy, onTerms, onContact }) {
         <h2 style={{ fontSize: 48, fontFamily: FONT, fontWeight: 400, color: "#fff", lineHeight: 1.15, marginBottom: 20 }}>
           Tu próxima reseña<br /><em style={{ color: "#888" }}>ya está en camino.</em>
         </h2>
-        <Btn onClick={onGetStarted} size="lg" variant="light">Crear cuenta gratis →</Btn>
+        <Btn onClick={onSignUp || onGetStarted} size="lg" variant="light">Crear cuenta gratis →</Btn>
       </section>
 
       <footer style={{ borderTop: "1px solid #1e3a8a", padding: "28px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#1e3a8a", flexWrap: "wrap", gap: 12 }}>
@@ -1226,8 +1226,8 @@ function Dashboard({ onConnectMore, onLogout, userEmail }) {
 
 
 /* ─── AUTH — LOGIN & REGISTER ───────────────────────────────────────────── */
-function AuthPage({ onAuth }) {
-  const [mode, setMode] = useState("login");
+function AuthPage({ onAuth, initialMode = "login" }) {
+  const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -1243,7 +1243,7 @@ function AuthPage({ onAuth }) {
   const [forgotError, setForgotError] = useState(null);
   const [forgotSuccess, setForgotSuccess] = useState(false);
 
-  const switchMode = (m) => { setMode(m); setError(null); setSuccess(null); setConfirm(""); setShowPwd(false); setShowConfirm(false); setForgotMode(false); };
+  const switchMode = (m) => { setMode(m); setError(null); setSuccess(null); setConfirm(""); setShowPwd(false); setShowConfirm(false); setForgotMode(false); window.history.replaceState({}, "", m === "register" ? "/signup" : "/login"); };
 
   const sendForgot = async () => {
     setForgotError(null);
@@ -1527,6 +1527,12 @@ function AuthPage({ onAuth }) {
 
         <p style={{ textAlign: "center", fontSize: 12, color: "#bbb", marginTop: 20 }}>
           Tus datos están seguros. No compartimos tu información con terceros.
+        </p>
+        <p style={{ textAlign: "center", fontSize: 13, color: "#aaa", marginTop: 12 }}>
+          <span
+            onClick={() => { window.history.pushState({}, "", "/"); window.dispatchEvent(new PopStateEvent("popstate")); }}
+            style={{ cursor: "pointer", textDecoration: "underline", color: "#2563EB" }}
+          >← Volver al inicio</span>
         </p>
       </div>
     </div>
@@ -1852,20 +1858,28 @@ function TermsPage({ onBack }) {
 }
 
 /* ─── ROOT ───────────────────────────────────────────────────────────────── */
+/* ─── ROUTER HELPER ──────────────────────────────────────────────────────── */
+function navigate(path) {
+  window.history.pushState({}, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
+
+/* ─── ROOT APP ───────────────────────────────────────────────────────────── */
 export default function App() {
-  const path = window.location.pathname;
   const hash = window.location.hash;
   const isPasswordRecovery = hash.includes("type=recovery");
-  const wantsDashboard = path === "/dashboard" || path.startsWith("/dashboard");
+
+  const getPath = () => window.location.pathname;
 
   const [session, setSession] = useState(undefined);
-  const [view, setView] = useState(
-    isPasswordRecovery ? "reset" :
-    path === "/privacy" ? "privacy" :
-    path === "/terms"   ? "terms"   :
-    path === "/contact" ? "contact" :
-    "main"
-  );
+  const [path, setPath] = useState(getPath());
+
+  // Escuchar navegación SPA
+  useEffect(() => {
+    const handlePopState = () => setPath(getPath());
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   // Detectar sesión al cargar y escuchar cambios
   useEffect(() => {
@@ -1874,27 +1888,16 @@ export default function App() {
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       console.log("[Auth] Auth event:", event);
-      if (event === "PASSWORD_RECOVERY") setView("reset");
       setSession(s ?? null);
     });
-    // Navegación al home al hacer clic en el logo
-    const handlePopState = () => {
-      if (window.location.pathname === "/") setView("main");
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => {
-      subscription.unsubscribe();
-      window.removeEventListener("popstate", handlePopState);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
-    window.history.pushState({}, "", "/");
+    navigate("/");
   };
-
-  const goHome = () => { setView("main"); window.history.pushState({}, "", "/"); };
 
   const styles = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -1904,13 +1907,12 @@ export default function App() {
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
   `;
 
-  // Páginas públicas y reset — accesibles sin sesión
-  if (view === "privacy") return <><style>{styles}</style><PrivacyPage onBack={goHome} /></>;
-  if (view === "terms")   return <><style>{styles}</style><TermsPage onBack={goHome} /></>;
-  if (view === "contact") return <><style>{styles}</style><ContactPage onBack={goHome} /></>;
-  if (view === "reset")   return <><style>{styles}</style><ResetPasswordPage onDone={() => { window.history.replaceState({}, "", "/"); setView("main"); }} /></>;
+  // ── Recuperación de contraseña (tiene prioridad absoluta) ─────────────────
+  if (isPasswordRecovery) {
+    return <><style>{styles}</style><ResetPasswordPage onDone={() => navigate("/")} /></>;
+  }
 
-  // Cargando sesión
+  // ── Spinner mientras carga la sesión ──────────────────────────────────────
   if (session === undefined) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fafafa" }}>
@@ -1920,50 +1922,60 @@ export default function App() {
     );
   }
 
-  // Sin sesión
-  if (!session) {
+  // ── Rutas públicas (sin sesión requerida) ─────────────────────────────────
+  if (path === "/privacy") return <><style>{styles}</style><PrivacyPage onBack={() => navigate("/")} /></>;
+  if (path === "/terms")   return <><style>{styles}</style><TermsPage   onBack={() => navigate("/")} /></>;
+  if (path === "/contact") return <><style>{styles}</style><ContactPage  onBack={() => navigate("/")} /></>;
+
+  // ── Rutas de auth: redirigir a /dashboard si ya hay sesión ───────────────
+  if (path === "/login" || path === "/signup") {
+    if (session) { navigate("/dashboard"); return null; }
     return (
       <>
         <style>{styles}</style>
-        <AuthApp
-          startOnAuth={wantsDashboard}
-          onAuth={(s) => {
-            setSession(s);
-            window.history.replaceState({}, "", "/dashboard");
-          }}
-          onPrivacy={() => { setView("privacy"); window.history.pushState({}, "", "/privacy"); }}
-          onTerms={() => { setView("terms"); window.history.pushState({}, "", "/terms"); }}
-          onContact={() => { setView("contact"); window.history.pushState({}, "", "/contact"); }}
+        <AuthPage
+          initialMode={path === "/signup" ? "register" : "login"}
+          onAuth={(s) => { setSession(s); navigate("/dashboard"); }}
         />
       </>
     );
   }
 
-  // Con sesión — app principal (siempre muestra dashboard)
+  // ── Ruta /dashboard: protegida ────────────────────────────────────────────
+  if (path === "/dashboard" || path.startsWith("/dashboard")) {
+    if (!session) { navigate("/login"); return null; }
+    return (
+      <>
+        <style>{styles}</style>
+        <MainApp
+          session={session}
+          onLogout={handleLogout}
+          onPrivacy={() => navigate("/privacy")}
+          onTerms={() => navigate("/terms")}
+        />
+      </>
+    );
+  }
+
+  // ── Ruta raíz /: landing pública ──────────────────────────────────────────
+  // Si hay sesión y entra a /, redirigir a /dashboard
+  if (session && path === "/") {
+    navigate("/dashboard");
+    return null;
+  }
+
   return (
     <>
       <style>{styles}</style>
-      <MainApp
-        session={session}
-        onLogout={handleLogout}
-        onPrivacy={() => { setView("privacy"); window.history.pushState({}, "", "/privacy"); }}
-        onTerms={() => { setView("terms"); window.history.pushState({}, "", "/terms"); }}
+      <LandingPage
+        onGetStarted={() => navigate("/login")}
+        onSignUp={() => navigate("/signup")}
+        onPrivacy={() => navigate("/privacy")}
+        onTerms={() => navigate("/terms")}
+        onContact={() => navigate("/contact")}
       />
     </>
   );
-}
-
-/* ─── AUTH APP (sin sesión) ──────────────────────────────────────────────── */
-function AuthApp({ onAuth, onPrivacy, onTerms, onContact, startOnAuth }) {
-  const [screen, setScreen] = useState(startOnAuth ? "auth" : "landing");
-  return screen === "landing"
-    ? <LandingPage
-        onGetStarted={() => setScreen("auth")}
-        onPrivacy={onPrivacy}
-        onTerms={onTerms}
-        onContact={onContact}
-      />
-    : <AuthPage onAuth={onAuth} onBack={startOnAuth ? null : () => setScreen("landing")} />;
 }
 
 /* ─── MAIN APP (con sesión) ──────────────────────────────────────────────── */

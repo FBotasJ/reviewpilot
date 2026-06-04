@@ -79,6 +79,34 @@ function Btn({ children, onClick, variant = "dark", size = "md", style: s = {}, 
 }
 
 /* ─── LANDING PAGE ───────────────────────────────────────────────────────── */
+/* ─── FAQ ITEM ───────────────────────────────────────────────────────────── */
+function FaqItem({ q, a }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      onClick={() => setOpen(!open)}
+      style={{
+        background: "#fff", border: "1px solid #e8edf5", borderRadius: 14,
+        padding: "20px 24px", marginBottom: 12, cursor: "pointer",
+        transition: "box-shadow 0.2s",
+        boxShadow: open ? "0 4px 16px rgba(37,99,235,0.08)" : "0 1px 3px rgba(0,0,0,0.04)",
+      }}
+      onMouseEnter={e => e.currentTarget.style.boxShadow = "0 4px 16px rgba(37,99,235,0.08)"}
+      onMouseLeave={e => e.currentTarget.style.boxShadow = open ? "0 4px 16px rgba(37,99,235,0.08)" : "0 1px 3px rgba(0,0,0,0.04)"}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <span style={{ fontSize: 15, fontWeight: 600, color: "#0a0a0a", lineHeight: 1.4 }}>{q}</span>
+        <span style={{ fontSize: 20, color: "#2563EB", flexShrink: 0, transition: "transform 0.2s", transform: open ? "rotate(45deg)" : "rotate(0deg)", fontWeight: 300 }}>+</span>
+      </div>
+      {open && (
+        <p style={{ marginTop: 12, fontSize: 14, color: "#555", lineHeight: 1.75, borderTop: "1px solid #f0f4ff", paddingTop: 12 }}>
+          {a}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) {
   const steps = [
     { n: "01", title: "Conecta tu tienda", desc: "Shopify, WooCommerce, Airbnb o Stripe. Un clic y listo." },
@@ -382,6 +410,25 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
       </section>
 
       {/* CTA FINAL */}
+      {/* FAQ */}
+      <section id="faq" style={{ padding: "90px 48px", background: "#f8faff" }}>
+        <div style={{ maxWidth: 720, margin: "0 auto" }}>
+          <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontFamily: FONT, fontWeight: 700, color: "#0a0a0a", textAlign: "center", marginBottom: 48 }}>
+            Preguntas frecuentes
+          </h2>
+          {[
+            { q: "¿Necesito conocimientos técnicos?", a: "No. Conecta tu tienda Shopify y configura tu primera solicitud en minutos." },
+            { q: "¿Cómo obtiene las reseñas?", a: "ReviewPilot envía automáticamente solicitudes de reseña después de la compra usando tu enlace de Google Reviews." },
+            { q: "¿Puedo usar mi propio enlace de Google Reviews?", a: "Sí. Solo pega tu enlace y nosotros nos encargamos del resto." },
+            { q: "¿Necesito tarjeta para empezar?", a: "No. Puedes comenzar con el plan gratuito." },
+            { q: "¿Qué ocurre si cancelo?", a: "Puedes cancelar cuando quieras, sin penalizaciones ni compromisos." },
+            { q: "¿Funciona con varias tiendas?", a: "Sí. Los planes Growth y Scale permiten conectar múltiples tiendas desde un solo panel." },
+          ].map(({ q, a }, i) => (
+            <FaqItem key={i} q={q} a={a} />
+          ))}
+        </div>
+      </section>
+
       <section className="rp-cta-section" style={{ padding: "90px 48px", textAlign: "center", background: "#1e3a8a" }}>
         <h2 className="rp-cta-h2" style={{ fontSize: "clamp(28px,4vw,48px)", fontFamily: FONT, fontWeight: 400, color: "#fff", lineHeight: 1.15, marginBottom: 20 }}>
           Tu próxima reseña<br /><em style={{ color: "#93c5fd" }}>ya está en camino.</em>

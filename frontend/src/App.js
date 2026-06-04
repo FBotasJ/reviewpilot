@@ -642,6 +642,28 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
           </div>
         </div>
 
+        {/* Rendimiento */}
+        <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, padding: "22px 26px", marginBottom: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#0a0a0a", marginBottom: 16 }}>📊 Rendimiento</div>
+          <div className="rp-perf-grid" style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 12, marginBottom: 14 }}>
+            {[
+              { label: "Solicitudes enviadas", value: "0" },
+              { label: "Correos abiertos",     value: "0" },
+              { label: "Clicks",               value: "0" },
+              { label: "Reseñas obtenidas",    value: "0" },
+              { label: "Conversión",           value: "0%" },
+            ].map(({ label, value }) => (
+              <div key={label} style={{ background: "#f9fafb", borderRadius: 12, padding: "14px 12px", textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#2563EB", marginBottom: 4 }}>{value}</div>
+                <div style={{ fontSize: 11, color: "#888", fontWeight: 500, lineHeight: 1.3 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 12, color: "#bbb", textAlign: "center" }}>
+            Las métricas aparecerán después de enviar las primeras solicitudes de reseña.
+          </p>
+        </div>
+
         {/* Enlace de Google Reviews */}
         <div style={{ background: "#fff", border: `1px solid ${googleUrl ? "#ececec" : "#fde68a"}`, borderRadius: 16, padding: "22px 26px", marginBottom: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -1994,6 +2016,7 @@ export default function App() {
       .rp-store-actions { flex-wrap: wrap !important; gap: 8px !important; }
       .rp-mobile-status { display: flex !important; align-items: center !important; }
       .rp-meta-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+      .rp-perf-grid { grid-template-columns: repeat(2,1fr) !important; }
       .rp-section-pad { padding-left: 20px !important; padding-right: 20px !important; }
       .rp-mobile-status { display: none !important; }
       .rp-cta-section { padding: 60px 20px !important; }

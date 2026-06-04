@@ -607,14 +607,16 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
   return (
     <div style={{ minHeight: "100vh", background: "#fafafa", fontFamily: BODY }}>
       {/* Nav */}
-      <div className="rp-dash-nav" style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 40px", height: 60, display: "flex", alignItems: "center", gap: 16 }}>
-        <button
-          onClick={onBack}
-          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, fontWeight: 600, color: "#888", padding: "8px", marginRight: 2, borderRadius: 8, transition: "all 0.2s ease", lineHeight: 1 }}
-          onMouseEnter={e => { e.currentTarget.style.opacity = "0.65"; e.currentTarget.style.color = "#2563EB"; }}
-          onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = "#888"; }}
-        >←</button>
-        <Logo height={32} />
+      <div className="rp-dash-nav" style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 24px", height: 60, display: "flex", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={onBack}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, fontWeight: 600, color: "#888", padding: "8px", margin: 0, borderRadius: 8, transition: "all 0.2s ease", lineHeight: 1 }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = "0.65"; e.currentTarget.style.color = "#2563EB"; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = "#888"; }}
+          >←</button>
+          <Logo height={32} />
+        </div>
       </div>
 
       <div style={{ maxWidth: 640, margin: "48px auto", padding: "0 24px" }}>

@@ -1,3 +1,4 @@
+import logoWhite from "./assets/logo_white.png";
 import logo from "./assets/logo.png";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
@@ -241,7 +242,7 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
       </section>
 
       <footer style={{ borderTop: "1px solid #1e3a8a", padding: "28px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#1e3a8a", flexWrap: "wrap", gap: 12 }}>
-        <Logo height={28} dark={true} />
+        <img src={logoWhite} alt="ReviewPilot" style={{ height: 28, width: "auto", objectFit: "contain", display: "block" }} />
         <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
           <span
             onClick={onPrivacy}

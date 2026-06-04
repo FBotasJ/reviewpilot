@@ -209,7 +209,7 @@ async function registerWebhooks(shop, accessToken) {
     body: JSON.stringify({
       webhook: {
         topic: "app/uninstalled",
-        address: webhookUrl,
+        address: `${process.env.APP_URL}/webhooks/app-uninstalled`,
         format: "json",
       },
     }),
@@ -283,7 +283,7 @@ async function processOrderFulfilled(shopDomain, order) {
     return;
   }
 
-  console.log(`[AI] Generando mensaje para ${customer.firstName} ${customer.email}...`);
+  console.log(`[AI] Generando mensaje para pedido #${customer.orderNumber} en ${shopDomain}...`);
 
   const message = await generateReviewMessage({
     customerName: customer.firstName,
@@ -300,7 +300,7 @@ async function processOrderFulfilled(shopDomain, order) {
     shopDomain,
   });
 
-  console.log(`[Email] ✅ Solicitud enviada a ${customer.email}`);
+  console.log(`[Email] ✅ Solicitud enviada para pedido #${customer.orderNumber}`);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1128,12 +1128,93 @@ app.post("/api/test/orders-fulfilled", async (req, res) => {
   });
 });
 
-// ENDPOINT TEMPORAL — obtener access token para registrar webhook manualmente
-// ELIMINAR después de registrar el webhook
-app.get("/api/dev/token/:shop", (req, res) => {
-  const store = stores.get(req.params.shop);
-  if (!store) return res.status(404).json({ error: "Tienda no encontrada en memoria. Reconecta primero." });
-  res.json({ shop: req.params.shop, token: store.accessToken });
+// [ELIMINADO] Endpoint de desarrollo /api/dev/token — removido por seguridad
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WEBHOOK: app/uninstalled — limpiar datos del merchant al desinstalar
+// ─────────────────────────────────────────────────────────────────────────────
+app.post("/webhooks/app-uninstalled", async (req, res) => {
+  // Shopify envía este webhook cuando un merchant desinstala la app
+  // Debemos eliminar todos sus datos de Supabase inmediatamente
+
+  let rawBody = "";
+  // El body ya fue leído por el middleware general (express.json)
+  // pero necesitamos verificar la firma con el body raw
+  // Para este endpoint usamos req.body directamente ya que express.json lo parseó
+  const shopDomain = req.headers["x-shopify-shop-domain"];
+  const hmacHeader = req.headers["x-shopify-hmac-sha256"];
+
+  console.log(`[Uninstall] 🔔 Webhook app/uninstalled recibido para: ${shopDomain}`);
+
+  // Verificar firma HMAC usando el body como string
+  const bodyStr = JSON.stringify(req.body);
+  const digest = crypto
+    .createHmac("sha256", process.env.SHOPIFY_CLIENT_SECRET)
+    .update(bodyStr, "utf8")
+    .digest("base64");
+
+  const isValid = hmacHeader && crypto.timingSafeEqual(
+    Buffer.from(digest),
+    Buffer.from(hmacHeader)
+  );
+
+  if (!isValid) {
+    console.warn(`[Uninstall] ⚠️ Firma inválida — ignorando webhook de ${shopDomain}`);
+    return res.status(401).send("Unauthorized");
+  }
+
+  // Responder 200 inmediatamente a Shopify (requerido en < 5 segundos)
+  res.status(200).send("OK");
+
+  // Procesar la eliminación de datos de forma asíncrona
+  try {
+    // 1. Obtener el ID de la tienda en Supabase
+    const { data: storeData, error: storeError } = await supabase
+      .from("stores")
+      .select("id")
+      .eq("shop_domain", shopDomain)
+      .single();
+
+    if (storeError || !storeData) {
+      console.warn(`[Uninstall] Tienda no encontrada en Supabase: ${shopDomain}`);
+      return;
+    }
+
+    const storeId = storeData.id;
+
+    // 2. Eliminar todas las reglas de la tienda
+    const { error: rulesError } = await supabase
+      .from("rules")
+      .delete()
+      .eq("store_id", storeId);
+
+    if (rulesError) {
+      console.error(`[Uninstall] ❌ Error eliminando reglas de ${shopDomain}:`, rulesError.message);
+    } else {
+      console.log(`[Uninstall] ✅ Reglas eliminadas para ${shopDomain}`);
+    }
+
+    // 3. Eliminar la tienda de Supabase
+    const { error: deleteError } = await supabase
+      .from("stores")
+      .delete()
+      .eq("shop_domain", shopDomain);
+
+    if (deleteError) {
+      console.error(`[Uninstall] ❌ Error eliminando tienda ${shopDomain}:`, deleteError.message);
+    } else {
+      console.log(`[Uninstall] ✅ Tienda eliminada de Supabase: ${shopDomain}`);
+    }
+
+    // 4. Eliminar de memoria
+    stores.delete(shopDomain);
+    console.log(`[Uninstall] ✅ Tienda eliminada de memoria: ${shopDomain}`);
+
+    console.log(`[Uninstall] 🗑️ Datos eliminados completamente para: ${shopDomain}`);
+
+  } catch (err) {
+    console.error(`[Uninstall] ❌ Error procesando desinstalación de ${shopDomain}:`, err.message);
+  }
 });
 
 // Health check

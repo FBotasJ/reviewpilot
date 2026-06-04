@@ -31,18 +31,25 @@ const BODY = "'Inter', sans-serif";
 
 
 /* ─── LOGO COMPONENT ─────────────────────────────────────────────────────── */
-const Logo = ({ height = 36, dark = false }) => (
-  <img
-    src={logo}
-    alt="ReviewPilot"
-    style={{
-      height,
-      width: "auto",
-      objectFit: "contain",
-      display: "block",
-      filter: dark ? "brightness(0) invert(1)" : "none",
-    }}
-  />
+const Logo = ({ height = 36, dark = false, onClick }) => (
+  <div
+    onClick={onClick || (() => { window.history.pushState({}, "", "/"); window.dispatchEvent(new PopStateEvent("popstate")); })}
+    style={{ display: "inline-block", cursor: "pointer", lineHeight: 0, transition: "opacity 0.15s" }}
+    onMouseEnter={e => e.currentTarget.style.opacity = "0.88"}
+    onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+  >
+    <img
+      src={logo}
+      alt="ReviewPilot"
+      style={{
+        height,
+        width: "auto",
+        objectFit: "contain",
+        display: "block",
+        filter: dark ? "brightness(0) invert(1)" : "none",
+      }}
+    />
+  </div>
 );
 
 /* ─── Utilidades ─────────────────────────────────────────────────────────── */
@@ -1870,7 +1877,15 @@ export default function App() {
       if (event === "PASSWORD_RECOVERY") setView("reset");
       setSession(s ?? null);
     });
-    return () => subscription.unsubscribe();
+    // Navegación al home al hacer clic en el logo
+    const handlePopState = () => {
+      if (window.location.pathname === "/") setView("main");
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, []);
 
   const handleLogout = async () => {

@@ -282,10 +282,10 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
 
       {/* PRICING */}
       <section className="rp-section-pad" style={{ padding: "90px 48px" }}>
-        <div style={{ maxWidth: 960, margin: "0 auto", textAlign: "center" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", textAlign: "center" }}>
           <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontFamily: FONT, fontWeight: 700, marginBottom: 12, color: "#0a0a0a" }}>Planes simples y transparentes</h2>
           <p style={{ fontSize: 16, color: "#666", marginBottom: 48 }}>Empieza gratis. Escala cuando lo necesites.</p>
-          <div className="rp-pricing" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, alignItems: "start" }}>
+          <div className="rp-pricing" style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 16, alignItems: "start" }}>
             {[
               {
                 name: "Free", price: "$0", per: "", btn: "Instalar gratis", highlight: false,
@@ -2135,7 +2135,7 @@ export default function App() {
     .rp-meta-grid { grid-template-columns: repeat(3,1fr) !important; }
 
     @media (max-width: 1024px) {
-      .rp-pricing { grid-template-columns: repeat(2,1fr) !important; }
+      .rp-pricing { grid-template-columns: repeat(2,1fr) !important; max-width: 680px !important; margin-left: auto !important; margin-right: auto !important; }
       .rp-testi { grid-template-columns: repeat(2,1fr) !important; }
     }
 
@@ -2145,7 +2145,7 @@ export default function App() {
       .rp-hero { padding: 72px 20px 48px !important; }
       .rp-steps { grid-template-columns: 1fr !important; }
       .rp-testi { grid-template-columns: 1fr !important; }
-      .rp-pricing { grid-template-columns: 1fr !important; max-width: 380px !important; margin: 0 auto !important; }
+      .rp-pricing { grid-template-columns: 1fr !important; max-width: 400px !important; margin: 0 auto !important; }
       .rp-footer { flex-direction: column !important; align-items: flex-start !important; padding: 24px 20px !important; gap: 16px !important; }
       .rp-footer-links { flex-direction: column !important; gap: 10px !important; align-items: flex-start !important; }
       .rp-footer-sep { display: none !important; }

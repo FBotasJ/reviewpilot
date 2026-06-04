@@ -231,7 +231,6 @@ function LandingPage({ onGetStarted, onPrivacy, onTerms, onContact }) {
       </section>
 
       <footer style={{ borderTop: "1px solid #222", padding: "28px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0a0a0a", flexWrap: "wrap", gap: 12 }}>
-        <Logo height={34} dark={true} />
         <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
           <span
             onClick={onPrivacy}

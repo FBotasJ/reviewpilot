@@ -1,4 +1,3 @@
-import logoWhite from "./assets/logo_white.png";
 import logo from "./assets/logo.png";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
@@ -97,7 +96,7 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
   return (
     <div style={{ background: "#fafafa", minHeight: "100vh", fontFamily: BODY }}>
       {/* NAV */}
-      <nav style={{
+      <nav className="rp-nav" style={{
         position: "sticky", top: 0, zIndex: 100,
         background: "rgba(250,250,250,0.92)", backdropFilter: "blur(12px)",
         borderBottom: "1px solid #ececec",
@@ -105,26 +104,26 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <Logo height={38} />
-        <div style={{ display: "flex", gap: 32, fontSize: 14, color: "#777" }}>
+        <div className="rp-nav-links" style={{ display: "flex", gap: 32, fontSize: 14, color: "#777" }}>
           {["Producto", "Precios", "Docs"].map(l => <span key={l} style={{ cursor: "pointer" }}>{l}</span>)}
         </div>
         <Btn onClick={onGetStarted} size="sm">Empezar gratis →</Btn>
       </nav>
 
       {/* HERO */}
-      <section style={{ padding: "100px 48px 80px", textAlign: "center", maxWidth: 860, margin: "0 auto" }}>
+      <section className="rp-hero" style={{ padding: "100px 48px 80px", textAlign: "center", maxWidth: 860, margin: "0 auto" }}>
         <div style={{ marginBottom: 20 }}>
           <span style={{ background: "#EFF6FF", color: "#2563EB", borderRadius: 99, padding: "5px 14px", fontSize: 12, fontWeight: 600 }}>
             ✨ Mensajes generados con IA
           </span>
         </div>
-        <h1 style={{ fontSize: "clamp(40px,6vw,68px)", lineHeight: 1.1, fontFamily: FONT, color: "#0a0a0a", marginBottom: 24, fontWeight: 400 }}>
+        <h1 style={{ fontSize: "clamp(28px,6vw,68px)", lineHeight: 1.1, fontFamily: FONT, color: "#0a0a0a", marginBottom: 24, fontWeight: 400 }}>
           Más reseñas,<br /><em style={{ color: "#666" }}>sin pedirlas tú.</em>
         </h1>
         <p style={{ fontSize: 18, color: "#666", lineHeight: 1.7, maxWidth: 540, margin: "0 auto 40px" }}>
           Conecta tu tienda y envía solicitudes automáticas justo cuando el cliente está más satisfecho.
         </p>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+        <div className="rp-hero-btns" style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <Btn onClick={onGetStarted} size="lg">Conectar mi tienda →</Btn>
           <Btn variant="light" size="lg" onClick={onSignUp || onGetStarted}>Crear cuenta gratis</Btn>
         </div>
@@ -155,9 +154,9 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
       </section>
 
       {/* LOGOS */}
-      <section style={{ padding: "36px 48px", borderTop: "1px solid #ececec", borderBottom: "1px solid #ececec", background: "#fff" }}>
+      <section className="rp-logos-section" style={{ padding: "36px 48px", borderTop: "1px solid #ececec", borderBottom: "1px solid #ececec", background: "#fff" }}>
         <p style={{ textAlign: "center", fontSize: 11, color: "#bbb", letterSpacing: 2, fontWeight: 700, marginBottom: 20 }}>SE CONECTA CON</p>
-        <div style={{ display: "flex", gap: 40, justifyContent: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
           {[["🛍️","Shopify"],["🛒","WooCommerce"],["🏠","Airbnb"],["💳","Stripe"],["📅","Calendly"],["🔍","Google"],["⭐","Trustpilot"]].map(([icon,name]) => (
             <div key={name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14, color: "#888", fontWeight: 500 }}>
               <span style={{ fontSize: 18 }}>{icon}</span>{name}
@@ -167,11 +166,11 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
       </section>
 
       {/* HOW IT WORKS */}
-      <section style={{ padding: "90px 48px", maxWidth: 960, margin: "0 auto" }}>
+      <section className="rp-section-pad" style={{ padding: "90px 48px", maxWidth: 960, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 56 }}>
-          <h2 style={{ fontSize: 40, fontFamily: FONT, fontWeight: 400, color: "#0a0a0a" }}>De cero a reseñas<br /><em>en 10 minutos</em></h2>
+          <h2 style={{ fontSize: "clamp(28px,4vw,40px)", fontFamily: FONT, fontWeight: 400, color: "#0a0a0a" }}>De cero a reseñas<br /><em>en 10 minutos</em></h2>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 20 }}>
+        <div className="rp-steps" style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 20 }}>
           {steps.map((s, i) => (
             <div key={i} style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 18, padding: "28px 32px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
               <div style={{ fontSize: 12, color: "#bbb", fontWeight: 700, letterSpacing: 1, marginBottom: 10 }}>{s.n}</div>
@@ -183,12 +182,12 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
       </section>
 
       {/* TESTIMONIALS */}
-      <section style={{ padding: "80px 48px", background: "#f5f5f5" }}>
+      <section className="rp-section-pad" style={{ padding: "80px 48px", background: "#f5f5f5" }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
-          <h2 style={{ fontSize: 40, fontFamily: FONT, fontWeight: 400, textAlign: "center", marginBottom: 48, color: "#0a0a0a" }}>
+          <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontFamily: FONT, fontWeight: 400, textAlign: "center", marginBottom: 48, color: "#0a0a0a" }}>
             Lo que dicen <em>quienes ya lo usan</em>
           </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+          <div className="rp-testi" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
             {testimonials.map((t, i) => (
               <div key={i} style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 18, padding: "26px 22px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
                 <div style={{ color: "#f59e0b", fontSize: 14, marginBottom: 12 }}>{"★".repeat(t.stars)}</div>
@@ -202,10 +201,10 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
       </section>
 
       {/* PRICING */}
-      <section style={{ padding: "90px 48px" }}>
+      <section className="rp-section-pad" style={{ padding: "90px 48px" }}>
         <div style={{ maxWidth: 800, margin: "0 auto", textAlign: "center" }}>
-          <h2 style={{ fontSize: 40, fontFamily: FONT, fontWeight: 400, marginBottom: 48, color: "#0a0a0a" }}>Simple y transparente</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+          <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontFamily: FONT, fontWeight: 400, marginBottom: 48, color: "#0a0a0a" }}>Simple y transparente</h2>
+          <div className="rp-pricing" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
             {[
               { name: "Starter", price: "$9", features: ["1 plataforma","500 envíos/mes","Email y SMS","2 reglas activas"], highlight: false },
               { name: "Growth", price: "$29", features: ["5 plataformas","5,000 envíos/mes","Email, SMS y WhatsApp","Reglas ilimitadas","Mensajes con IA"], highlight: true },
@@ -234,37 +233,37 @@ function LandingPage({ onGetStarted, onSignUp, onPrivacy, onTerms, onContact }) 
       </section>
 
       {/* CTA FINAL */}
-      <section style={{ padding: "90px 48px", textAlign: "center", background: "#1e3a8a" }}>
-        <h2 style={{ fontSize: 48, fontFamily: FONT, fontWeight: 400, color: "#fff", lineHeight: 1.15, marginBottom: 20 }}>
-          Tu próxima reseña<br /><em style={{ color: "#888" }}>ya está en camino.</em>
+      <section className="rp-cta-section" style={{ padding: "90px 48px", textAlign: "center", background: "#1e3a8a" }}>
+        <h2 className="rp-cta-h2" style={{ fontSize: "clamp(28px,4vw,48px)", fontFamily: FONT, fontWeight: 400, color: "#fff", lineHeight: 1.15, marginBottom: 20 }}>
+          Tu próxima reseña<br /><em style={{ color: "#93c5fd" }}>ya está en camino.</em>
         </h2>
         <Btn onClick={onSignUp || onGetStarted} size="lg" variant="light">Crear cuenta gratis →</Btn>
       </section>
 
-      <footer style={{ borderTop: "1px solid #1e3a8a", padding: "28px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#1e3a8a", flexWrap: "wrap", gap: 12 }}>
-        <img src={logoWhite} alt="ReviewPilot" style={{ height: 28, width: "auto", objectFit: "contain", display: "block" }} />
-        <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
+      <footer className="rp-footer" style={{ borderTop: "1px solid #1e3a8a", padding: "28px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#1e3a8a", flexWrap: "wrap", gap: 12 }}>
+        <Logo height={28} dark={true} />
+        <div className="rp-footer-links" style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
           <span
             onClick={onPrivacy}
             style={{ fontSize: 13, color: "#888", cursor: "pointer", fontFamily: BODY }}
             onMouseEnter={e => e.target.style.color = "#93c5fd"}
             onMouseLeave={e => e.target.style.color = "#888"}
           >Política de Privacidad</span>
-          <span style={{ color: "#333", fontSize: 12 }}>|</span>
+          <span className="rp-footer-sep" style={{ color: "#333", fontSize: 12 }}>|</span>
           <span
             onClick={onTerms}
             style={{ fontSize: 13, color: "#888", cursor: "pointer", fontFamily: BODY }}
             onMouseEnter={e => e.target.style.color = "#93c5fd"}
             onMouseLeave={e => e.target.style.color = "#888"}
           >Términos de Servicio</span>
-          <span style={{ color: "#333", fontSize: 12 }}>|</span>
+          <span className="rp-footer-sep" style={{ color: "#333", fontSize: 12 }}>|</span>
           <span
             onClick={onContact}
             style={{ fontSize: 13, color: "#888", cursor: "pointer", fontFamily: BODY }}
             onMouseEnter={e => e.target.style.color = "#93c5fd"}
             onMouseLeave={e => e.target.style.color = "#888"}
           >Contacto</span>
-          <span style={{ color: "#333", fontSize: 12 }}>|</span>
+          <span className="rp-footer-sep" style={{ color: "#333", fontSize: 12 }}>|</span>
           <a href="mailto:support@reviewpilot.company" style={{ fontSize: 13, color: "#888", textDecoration: "none", fontFamily: BODY }}
             onMouseEnter={e => e.target.style.color = "#93c5fd"}
             onMouseLeave={e => e.target.style.color = "#888"}
@@ -609,7 +608,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
   return (
     <div style={{ minHeight: "100vh", background: "#fafafa", fontFamily: BODY }}>
       {/* Nav */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 40px", height: 60, display: "flex", alignItems: "center", gap: 16 }}>
+      <div className="rp-dash-nav" style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 40px", height: 60, display: "flex", alignItems: "center", gap: 16 }}>
         <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#888", padding: 0 }}>←</button>
         <Logo height={32} />
       </div>
@@ -623,7 +622,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
 
         {/* Meta card */}
         <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, padding: "22px 26px", marginBottom: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+          <div className="rp-meta-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
             {[
               ["Conectada", new Date(store.connectedAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })],
               ["Total solicitudes", rules.length],
@@ -913,7 +912,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
 
               {/* Actions (ocultos mientras se edita) */}
               {!isEditing && confirming !== rule.id && (
-                <div style={{ padding: "16px 26px", borderTop: "1px solid #f3f4f6", display: "flex", gap: 10 }}>
+                <div className="rp-store-actions" style={{ padding: "16px 26px", borderTop: "1px solid #f3f4f6", display: "flex", gap: 10 }}>
                   <Btn
                     variant="light" size="sm" disabled={!rule.id}
                     onClick={() => setEditing({ ruleId: rule.id, delay_days: rule.delay_days ?? 7, channel: rule.channel || "email", prompt: rule.prompt || "" })}
@@ -1120,23 +1119,23 @@ function Dashboard({ onConnectMore, onLogout, userEmail }) {
 
   return (
     <div style={{ minHeight: "100vh", background: "#fafafa", fontFamily: BODY }}>
-      <div style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 40px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div className="rp-dash-nav" style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 40px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Logo height={32} />
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          {userEmail && <span style={{ fontSize: 13, color: "#aaa" }}>{userEmail}</span>}
-          <Btn onClick={onConnectMore} size="sm">+ Conectar tienda</Btn>
+        <div className="rp-dash-nav-right" style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          {userEmail && <span className="rp-user-email" style={{ fontSize: 13, color: "#aaa" }}>{userEmail}</span>}
+          <Btn onClick={onConnectMore} size="sm">+ Conectar</Btn>
           {onLogout && (
             <button
               onClick={onLogout}
               style={{ fontSize: 13, color: "#888", background: "none", border: "none", cursor: "pointer", fontFamily: BODY, padding: 0 }}
               onMouseEnter={e => e.target.style.color = "#2563EB"}
               onMouseLeave={e => e.target.style.color = "#888"}
-            >Cerrar sesión</button>
+            >Salir</button>
           )}
         </div>
       </div>
 
-      <div style={{ maxWidth: 760, margin: "48px auto", padding: "0 24px" }}>
+      <div style={{ maxWidth: 760, margin: "48px auto", padding: "0 24px", boxSizing: "border-box" }}>
         <h1 style={{ fontSize: 30, fontFamily: FONT, fontWeight: 400, marginBottom: 6 }}>Panel de reseñas</h1>
         <p style={{ fontSize: 14, color: "#888", marginBottom: 32 }}>Tus tiendas — selecciona una para administrar sus solicitudes de reseña</p>
 
@@ -1168,7 +1167,7 @@ function Dashboard({ onConnectMore, onLogout, userEmail }) {
         {!loading && !error && stores.length > 0 && (
           <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
             {/* Header */}
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", padding: "12px 22px", borderBottom: "1px solid #f3f4f6", background: "#f9f9f9" }}>
+            <div className="rp-stores-header" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr", padding: "12px 22px", borderBottom: "1px solid #f3f4f6", background: "#f9f9f9" }}>
               {["Tienda", "Conectada", "Solicitudes", "Activas", "Estado"].map(h => (
                 <span key={h} style={{ fontSize: 11, fontWeight: 700, color: "#aaa", letterSpacing: 0.5, textTransform: "uppercase" }}>{h}</span>
               ))}
@@ -1181,6 +1180,7 @@ function Dashboard({ onConnectMore, onLogout, userEmail }) {
                 <div
                   key={store.domain}
                   onClick={() => setSelected(store)}
+                  className="rp-stores-row"
                   style={{
                     display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr",
                     padding: "16px 22px", alignItems: "center",
@@ -1193,20 +1193,29 @@ function Dashboard({ onConnectMore, onLogout, userEmail }) {
                   {/* Tienda */}
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: isActive ? "#22c55e" : "#e5e7eb", flexShrink: 0 }} />
-                    <span style={{ fontSize: 14, fontWeight: 600, color: "#0a0a0a" }}>{store.domain}</span>
+                    <div>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "#0a0a0a", wordBreak: "break-all" }}>{store.domain}</span>
+                      {/* Mobile: show status badge inline */}
+                      <div className="rp-mobile-status" style={{ display: "none", marginTop: 4 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 99, background: isActive ? "#dcfce7" : "#f3f4f6", color: isActive ? "#166534" : "#888" }}>
+                          {isActive ? "Activo" : "Inactivo"}
+                        </span>
+                        <span style={{ fontSize: 12, color: "#aaa", marginLeft: 8 }}>{fmt(store.connectedAt)}</span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Conectada */}
-                  <span style={{ fontSize: 13, color: "#666" }}>{fmt(store.connectedAt)}</span>
+                  <span className="rp-store-extra" style={{ fontSize: 13, color: "#666" }}>{fmt(store.connectedAt)}</span>
 
                   {/* Reglas */}
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "#0a0a0a" }}>{store.rulesCount}</span>
+                  <span className="rp-store-extra" style={{ fontSize: 14, fontWeight: 600, color: "#0a0a0a" }}>{store.rulesCount}</span>
 
                   {/* Activas */}
-                  <span style={{ fontSize: 14, fontWeight: 600, color: store.activeRules > 0 ? "#16a34a" : "#aaa" }}>{store.activeRules}</span>
+                  <span className="rp-store-extra" style={{ fontSize: 14, fontWeight: 600, color: store.activeRules > 0 ? "#16a34a" : "#aaa" }}>{store.activeRules}</span>
 
                   {/* Estado */}
-                  <span style={{
+                  <span className="rp-store-extra" style={{
                     display: "inline-block", fontSize: 12, fontWeight: 600,
                     padding: "3px 10px", borderRadius: 99,
                     background: isActive ? "#dcfce7" : "#f3f4f6",
@@ -1346,9 +1355,9 @@ function AuthPage({ onAuth, initialMode = "login" }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: BODY }}>
+    <div className="rp-auth-wrap" style={{ minHeight: "100vh", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: BODY }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
-      <div style={{ width: "100%", maxWidth: 440 }}>
+      <div className="rp-auth-inner" style={{ width: "100%", maxWidth: 440 }}>
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <Logo height={40} />
@@ -1358,7 +1367,7 @@ function AuthPage({ onAuth, initialMode = "login" }) {
         </div>
 
         {/* Card */}
-        <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 20, padding: "36px 40px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+        <div className="rp-auth-card" style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 20, padding: "36px 40px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
           {/* Tabs */}
           <div style={{ display: "flex", marginBottom: 28, background: "#f3f4f6", borderRadius: 10, padding: 4 }}>
             {[["login", "Iniciar sesión"], ["register", "Crear cuenta"]].map(([m, label]) => (
@@ -1578,15 +1587,15 @@ function ResetPasswordPage({ onDone }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: BODY }}>
+    <div className="rp-auth-wrap" style={{ minHeight: "100vh", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: BODY }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
-      <div style={{ width: "100%", maxWidth: 440 }}>
+      <div className="rp-auth-inner" style={{ width: "100%", maxWidth: 440 }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <Logo height={40} />
           <p style={{ fontSize: 13, color: "#aaa", marginTop: 6 }}>Restablece tu contraseña</p>
         </div>
 
-        <div style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 20, padding: "36px 40px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+        <div className="rp-auth-card" style={{ background: "#fff", border: "1px solid #ececec", borderRadius: 20, padding: "36px 40px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
           {!success ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <p style={{ fontSize: 14, color: "#555" }}>Ingresa tu nueva contraseña. Debe tener al menos 8 caracteres.</p>
@@ -1692,18 +1701,18 @@ function LegalPage({ title, children, onBack }) {
     <div style={{ minHeight: "100vh", background: "#fafafa", fontFamily: BODY }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'); *{box-sizing:border-box;margin:0;padding:0;}`}</style>
       {/* Nav */}
-      <nav style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 48px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <nav className="rp-legal-nav" style={{ background: "#fff", borderBottom: "1px solid #ececec", padding: "0 48px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span onClick={onBack} style={{ cursor: "pointer" }}><Logo height={32} /></span>
         <Btn onClick={onBack} variant="light" size="sm">← Inicio</Btn>
       </nav>
       {/* Content */}
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "56px 24px 80px" }}>
-        <h1 style={{ fontSize: 40, fontFamily: FONT, fontWeight: 400, color: "#0a0a0a", marginBottom: 8 }}>{title}</h1>
+      <div className="rp-legal-content" style={{ maxWidth: 760, margin: "0 auto", padding: "56px 24px 80px" }}>
+        <h1 style={{ fontSize: "clamp(26px,4vw,40px)", fontFamily: FONT, fontWeight: 400, color: "#0a0a0a", marginBottom: 8 }}>{title}</h1>
         <p style={{ fontSize: 13, color: "#aaa", marginBottom: 48 }}>Última actualización: 1 de junio de 2026</p>
         {children}
       </div>
       {/* Footer */}
-      <footer style={{ borderTop: "1px solid #ececec", padding: "24px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", flexWrap: "wrap", gap: 12 }}>
+      <footer className="rp-legal-footer" style={{ borderTop: "1px solid #ececec", padding: "24px 48px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", flexWrap: "wrap", gap: 12 }}>
         <Logo height={28} />
         <div style={{ display: "flex", gap: 16, fontSize: 13, color: "#888", flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ cursor: "pointer" }} onClick={() => window.location.assign("/privacy")}>Política de Privacidad</span>
@@ -1906,6 +1915,94 @@ export default function App() {
     @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
     @keyframes spin { to{transform:rotate(360deg)} }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* ── RESPONSIVE ─────────────────────────────────────────── */
+
+    /* NAV */
+    .rp-nav { padding: 0 48px !important; }
+    .rp-nav-links { display: flex !important; }
+
+    /* HERO */
+    .rp-hero { padding: 100px 48px 80px !important; }
+
+    /* HOW IT WORKS grid */
+    .rp-steps { grid-template-columns: repeat(2,1fr) !important; }
+
+    /* TESTIMONIALS grid */
+    .rp-testi { grid-template-columns: repeat(3,1fr) !important; }
+
+    /* PRICING grid */
+    .rp-pricing { grid-template-columns: repeat(3,1fr) !important; }
+
+    /* FOOTER */
+    .rp-footer { flex-direction: row !important; }
+    .rp-footer-links { flex-direction: row !important; }
+
+    /* STORES TABLE */
+    .rp-stores-header { display: grid !important; }
+    .rp-stores-row { display: grid !important; }
+    .rp-store-extra { display: block !important; }
+
+    /* DASHBOARD NAV */
+    .rp-dash-nav { padding: 0 40px !important; }
+    .rp-dash-nav-right { gap: 16px !important; }
+    .rp-user-email { display: inline !important; }
+
+    /* LEGAL */
+    .rp-legal-content { padding: 56px 24px 80px !important; }
+    .rp-legal-nav { padding: 0 48px !important; }
+    .rp-legal-footer { padding: 24px 48px !important; flex-direction: row !important; }
+
+    /* AUTH */
+    .rp-auth-card { padding: 36px 40px !important; }
+
+    /* STORE DETAIL */
+    .rp-store-actions { flex-wrap: nowrap !important; }
+    .rp-meta-grid { grid-template-columns: repeat(3,1fr) !important; }
+
+    @media (max-width: 1024px) {
+      .rp-pricing { grid-template-columns: repeat(2,1fr) !important; }
+      .rp-testi { grid-template-columns: repeat(2,1fr) !important; }
+    }
+
+    @media (max-width: 768px) {
+      .rp-nav { padding: 0 20px !important; height: 56px !important; }
+      .rp-nav-links { display: none !important; }
+      .rp-hero { padding: 72px 20px 48px !important; }
+      .rp-steps { grid-template-columns: 1fr !important; }
+      .rp-testi { grid-template-columns: 1fr !important; }
+      .rp-pricing { grid-template-columns: 1fr !important; max-width: 380px !important; margin: 0 auto !important; }
+      .rp-footer { flex-direction: column !important; align-items: flex-start !important; padding: 24px 20px !important; gap: 16px !important; }
+      .rp-footer-links { flex-direction: column !important; gap: 10px !important; align-items: flex-start !important; }
+      .rp-footer-sep { display: none !important; }
+      .rp-stores-header { display: none !important; }
+      .rp-stores-row { display: flex !important; flex-direction: column !important; gap: 4px !important; padding: 16px !important; }
+      .rp-store-extra { display: none !important; }
+      .rp-dash-nav { padding: 0 16px !important; height: auto !important; min-height: 56px !important; flex-wrap: wrap !important; gap: 8px !important; padding-top: 10px !important; padding-bottom: 10px !important; }
+      .rp-dash-nav-right { gap: 10px !important; flex-wrap: wrap !important; }
+      .rp-user-email { display: none !important; }
+      .rp-legal-content { padding: 32px 16px 60px !important; }
+      .rp-legal-nav { padding: 0 16px !important; }
+      .rp-legal-footer { padding: 20px 16px !important; flex-direction: column !important; gap: 12px !important; align-items: flex-start !important; }
+      .rp-auth-card { padding: 24px 20px !important; }
+      .rp-store-actions { flex-wrap: wrap !important; gap: 8px !important; }
+      .rp-mobile-status { display: flex !important; align-items: center !important; }
+      .rp-meta-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+      .rp-section-pad { padding-left: 20px !important; padding-right: 20px !important; }
+      .rp-mobile-status { display: none !important; }
+      .rp-cta-section { padding: 60px 20px !important; }
+      .rp-logos-section { padding: 24px 16px !important; gap: 16px !important; }
+    }
+
+    @media (max-width: 480px) {
+      .rp-hero h1 { font-size: 32px !important; }
+      .rp-hero p { font-size: 16px !important; }
+      .rp-hero-btns { flex-direction: column !important; align-items: stretch !important; }
+      .rp-hero-btns button { width: 100% !important; justify-content: center !important; }
+      .rp-auth-wrap { padding: 16px !important; }
+      .rp-auth-inner { max-width: 100% !important; }
+      .rp-cta-h2 { font-size: 28px !important; }
+    }
   `;
 
   // ── Recuperación de contraseña (tiene prioridad absoluta) ─────────────────

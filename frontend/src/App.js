@@ -856,7 +856,7 @@ function StoreDetail({ store, onBack, onStoreUpdated }) {
           <div className="rp-perf-grid" style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 12, marginBottom: 14 }}>
             {[
               { label: "Solicitudes enviadas", value: "0" },
-              { label: "Correos abiertos",     value: "0" },
+              { label: "Solicitudes activas",  value: "0" },
               { label: "Clicks",               value: "0" },
               { label: "Reseñas obtenidas",    value: "0" },
               { label: "Conversión",           value: "0%" },
